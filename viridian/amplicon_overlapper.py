@@ -33,6 +33,7 @@ def amplicons_to_consensus_contigs(amplicons, min_match_length=20):
             indexes_to_clear.add(i + 1)
 
     for i in indexes_to_clear:
+        logging.debug(f"Failing amplicon because no overlap: {amplicons[i].name}")
         amplicons[i].clear_seqs_because_overlap_fail()
         if i > 0:
             overlaps[i - 1] = None
@@ -43,6 +44,7 @@ def amplicons_to_consensus_contigs(amplicons, min_match_length=20):
         return None
 
     for i in range(0, len(amplicons)):
+        logging.debug(f"Overlapping amplicons. Processing {amplicons[i].name}. Assemble succes: {amplicons[i].assemble_success}")
         if amplicons[i].assemble_success:
             if i == 0 or overlaps[i - 1] is None:
                 start = 0
@@ -61,8 +63,8 @@ def amplicons_to_consensus_contigs(amplicons, min_match_length=20):
             if len(contigs) > 0:
                 if len(contigs[-1]) == 0:
                     contigs.pop()
-                else:
-                    contigs.append([])
+
+                contigs.append([])
 
     contigs = ["".join(x).strip("N") for x in contigs if len(x) > 0]
     return contigs

@@ -42,7 +42,7 @@ def polish_each_amplicon(
             f"Start processing amplicon {amplicon.name} ({i+1}/{len(amplicons)})"
         )
         if amplicon.name in amplicons_to_fail:
-            logging.debug("User chose to fail amplicon {amplcon.name}. Moving on")
+            logging.debug(f"User chose to fail amplicon {amplicon.name}. Moving on")
             amplicon.force_polish_fail()
             continue
 

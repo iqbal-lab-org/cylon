@@ -80,6 +80,38 @@ def test_amplicons_to_consensus_contigs():
     expect = [amplicons[2].masked_seq.strip("N")]
     assert got_contigs == expect
 
+def test_amplicons_to_consensus_contigs_2():
+    # This hits case not seen in previous test. Need a combination of amplicons
+    # that pass fail pass fail pass. Was a bug where new contig was not being
+    # started when we had two amplicons that didn't overlap and got removed
+    # ref is 130bp of random sequence
+    #                10        20        30        40        50        60        70        80        90        100       110       120
+    #      0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+    ref = "GGCAACAAGCCCCGTAACCCAGCTCACCAGCGAATCACAAGTGTTAAGAGACAAAGAAGCGGCAGAACACTTTGGCTCCTATGCACAGCGCGGACCAACAGTCGATCGTTATCCTAACTCTACATACTAA"
+    amplicons = [
+        amps.Amplicon("amp1", 0, 30),
+        amps.Amplicon("amp2", 20, 50),
+        amps.Amplicon("amp3", 40, 70),
+        amps.Amplicon("amp4", 60, 90),
+        amps.Amplicon("amp5", 80, 110),
+        amps.Amplicon("amp6", 100, 130),
+    ]
+    got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 7)
+    assert got_contigs == None
+    amplicons[0].masked_seq = ref[0:30]
+    amplicons[0].assemble_success = True
+    amplicons[1].masked_seq = ref[20:50]
+    amplicons[1].assemble_success = True
+    amplicons[2].masked_seq = ref[40:55] + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    amplicons[2].assemble_success = True
+    amplicons[3].masked_seq = "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG" + ref[75:90]
+    amplicons[3].assemble_success = True
+    amplicons[4].masked_seq = ref[80:110]
+    amplicons[4].assemble_success = True
+    amplicons[5].masked_seq = ref[100:130]
+    amplicons[5].assemble_success = True
+    got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 7)
+    assert got_contigs == [ref[0:50], ref[80:130]]
 
 def test_consensus_contigs_to_consensus():
     ref_fasta = os.path.join(data_dir, "consensus_contigs_to_consensus.fa")
