@@ -129,6 +129,9 @@ class Amplicon:
                             )
                         )
 
+        self.polish_data["Reads matching"] = len(fwd_reads) + len(rev_reads)
+        self.polish_data["Reads matching forward strand"] = len(fwd_reads)
+        self.polish_data["Reads matching reverse strand"] = len(rev_reads)
         random.seed(42)
         random.shuffle(fwd_reads)
         random.shuffle(rev_reads)
@@ -151,9 +154,6 @@ class Amplicon:
                     break
 
         coverage = round(total_bp / len(self), 2)
-        self.polish_data["Reads matching"] = len(fwd_reads) + len(rev_reads)
-        self.polish_data["Reads matching forward strand"] = len(fwd_reads)
-        self.polish_data["Reads matching reverse strand"] = len(rev_reads)
         self.polish_data["Reads used"] = reads_used
         self.polish_data["Coverage for polishing"] = coverage
         return len(fwd_reads) + len(rev_reads), reads_used, coverage
