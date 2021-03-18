@@ -280,8 +280,11 @@ def load_amplicons_from_fasta_and_bed(fasta, bed):
         amplicons[amp_lookup[name]].assemble_success = True
     return amplicons
 
+def amplicons_to_list_of_dicts(amplicons):
+    return [a.to_dict() for a in amplicons]
 
 def amplicons_to_json(amplicons, outfile):
-    data = [a.to_dict() for a in amplicons]
+    data = amplicons_to_list_of_dicts(amplicons)
     with open(outfile, "w") as f:
         json.dump(data, f, indent=2, sort_keys=True)
+

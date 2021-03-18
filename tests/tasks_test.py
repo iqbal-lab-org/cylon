@@ -43,7 +43,7 @@ def test_assemble():
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
     assert got == consensus_from_file.seq
-    assert os.path.exists(os.path.join(options.outdir, "amplicon_data.json"))
+    assert os.path.exists(os.path.join(options.outdir, "run_info.json"))
     utils.rm_rf(outdir)
 
     # Test the option amplicons_to_fail_file
@@ -58,7 +58,7 @@ def test_assemble():
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
     assert got == consensus_from_file.seq
-    assert os.path.exists(os.path.join(options.outdir, "amplicon_data.json"))
+    assert os.path.exists(os.path.join(options.outdir, "run_info.json"))
     utils.rm_rf(outdir)
     os.unlink(options.amplicons_to_fail_file)
 

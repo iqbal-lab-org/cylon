@@ -1,10 +1,15 @@
+import datetime
+import json
 import logging
 import os
+import socket
+import sys
 
 import pysam
 
 from viridian import amplicon_overlapper, utils
 from viridian import amplicons as amps
+from viridian import __version__ as viridian_version
 
 
 def map_reads(ref_fasta, reads, outfile, minimap_opts="-t 1 -x map-ont", mates_file=None):
@@ -93,11 +98,33 @@ def run_assembly_pipeline(
     amplicons_to_fail=None,
     debug=False,
 ):
+    start_time = datetime.datetime.now()
+    os.mkdir(outdir)
+    json_out = os.path.join(outdir, "run_info.json")
+    json_data = {
+        "run_summary": {
+            "total_amplicons": None,
+            "successful_amplicons": None,
+            "command": " ".join(sys.argv),
+            "cwd": os.getcwd(),
+            "version": viridian_version,
+            "finished_running": False,
+            "made_consensus": False,
+            "consensus": None,
+            "start_time": start_time.replace(microsecond=0).isoformat(),
+            "end_time": None,
+            "hostname": socket.gethostname(),
+        },
+        "amplicons": None,
+    }
+    with open(json_out, "w") as f:
+        json.dump(json_data, f, indent=2, sort_keys=True)
+
     ref_genome = utils.load_single_seq_fasta(ref_fasta)
     logging.info(f"Loaded ref genome {ref_genome.id}")
     amplicons = amps.load_amplicons_bed_file(amplicons_bed)
+    json_data["run_summary"]["total_amplicons"] = len(amplicons)
     logging.info(f"Loaded amplicons file {amplicons_bed}")
-    os.mkdir(outdir)
 
     if sorted_bam is None:
         assert reads_fastaq is not None
@@ -131,13 +158,8 @@ def run_assembly_pipeline(
         utils.rm_rf(polish_root_dir)
 
     logging.info("Finished polishing each amplicon")
-    any_amplicon_ok = False
-    for amplicon in amplicons:
-        if amplicon.assemble_success:
-            any_amplicon_ok = True
-            break
-
-    if not any_amplicon_ok:
+    json_data["run_summary"]["successful_amplicons"] = len([a for a in amplicons if a.assemble_success])
+    if json_data["run_summary"]["successful_amplicons"] == 0:
         logging.warning("No amplicons successfully polished!")
         consensus = None
     else:
@@ -151,10 +173,17 @@ def run_assembly_pipeline(
             ref_map_end_allowance=contig_map_end_allowance,
             debug=debug,
         )
+    json_data["run_summary"]["consensus"] = consensus
     if consensus is None:
         logging.warning("Did not make consensus sequence. Please see previous warnings")
     else:
         logging.info("Finished making consensus sequence.")
-    json_out = os.path.join(outdir, "amplicon_data.json")
-    amps.amplicons_to_json(amplicons, json_out)
+        json_data["run_summary"]["made_consensus"] = True
+    json_data["amplicons"] = amps.amplicons_to_list_of_dicts(amplicons)
+    json_data["run_summary"]["finished_running"] = True
+    end_time =  datetime.datetime.now()
+    json_data["run_summary"]["end_time"] = end_time.replace(microsecond=0).isoformat()
+    json_data["run_summary"]["run_time"] = str(end_time - start_time)
+    with open(json_out, "w") as f:
+        json.dump(json_data, f, indent=2, sort_keys=True)
     return consensus
