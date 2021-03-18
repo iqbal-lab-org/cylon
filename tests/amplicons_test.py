@@ -122,6 +122,9 @@ def test_polish():
     assert amplicon.polish_data["Polish success"]
     utils.rm_rf(outdir)
 
+    # The reads are such that there's a dip in coverage in the middle of the
+    # amplicon. Setting min_depth_for_not_N higher makes this region get
+    # masked, and then the amplicon should get failed
     amplicon = amplicons.Amplicon("amplicon1", 60, 259)
     amplicon.polish(
         ref_genome,
@@ -129,12 +132,15 @@ def test_polish():
         outdir,
         min_mean_coverage=3,
         racon_iterations=3,
-        min_depth_for_not_N=3,
-        min_read_length=100,
+        min_depth_for_not_N=18,
+        min_read_length=50,
         max_polished_N_prop=0.1,
         debug=True,
     )
-    amplicon.masked_seq is None
+    assert (
+        amplicon.masked_seq
+        == "NNNNNNNNNNNNNNNNNNNNAAAGCCCCATTTTGTACAGCTTTTTCTAGAACAGTCAGGGCGCGCTCCCAGGAGTTGCTTCGCTNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNGAATGCTGCCCTATTGCCAGTGCTTAGAAATGGACTGGTGTTACGTCCACGNNNNNNNNNNNNNNNNNNNNN"
+    )
     assert not amplicon.assemble_success
     assert not amplicon.polish_data["Polish success"]
     utils.rm_rf(outdir)

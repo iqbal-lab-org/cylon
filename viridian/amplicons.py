@@ -214,11 +214,17 @@ class Amplicon:
             min_depth=min_depth_for_not_N,
             debug=debug,
         )
-        proportion_masked = round(self.masked_seq.count("N") / len(self.masked_seq), 2)
+        masked_strip_ns = self.masked_seq.strip("N")
+        if len(masked_strip_ns) == 0:
+            proportion_masked = 0
+        else:
+            proportion_masked = round(
+                masked_strip_ns.count("N") / len(masked_strip_ns), 2
+            )
         if proportion_masked > max_polished_N_prop:
             percent_N = 100 * proportion_masked
             self.polish_data["Comments"].append(
-                f"Too many Ns ({percent_N}%) after masking polished sequence"
+                f"Too many Ns ({percent_N}%) after masking polished sequence (not including Ns at the start/end)"
             )
         else:
             self.polish_data["Polish success"] = True
@@ -280,11 +286,12 @@ def load_amplicons_from_fasta_and_bed(fasta, bed):
         amplicons[amp_lookup[name]].assemble_success = True
     return amplicons
 
+
 def amplicons_to_list_of_dicts(amplicons):
     return [a.to_dict() for a in amplicons]
+
 
 def amplicons_to_json(amplicons, outfile):
     data = amplicons_to_list_of_dicts(amplicons)
     with open(outfile, "w") as f:
         json.dump(data, f, indent=2, sort_keys=True)
-
