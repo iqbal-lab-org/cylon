@@ -4,6 +4,7 @@ import logging
 import os
 import socket
 import sys
+import tempfile
 
 import pysam
 
@@ -136,26 +137,32 @@ def run_assembly_pipeline(
         assert reads_fastaq is None
 
     bam = pysam.AlignmentFile(sorted_bam, "rb")
-    polish_root_dir = os.path.join(outdir, "Amplicon_polish")
-    os.mkdir(polish_root_dir)
-    logging.info("Start polishing each amplicon")
-    polish_each_amplicon(
-        ref_genome,
-        amplicons,
-        bam,
-        polish_root_dir,
-        min_mean_coverage=min_mean_coverage,
-        target_coverage=target_coverage,
-        read_end_trim=read_end_trim,
-        read_map_tolerance=read_map_tolerance,
-        min_read_length=min_read_length,
-        racon_iterations=racon_iterations,
-        min_depth_for_not_N=min_depth_for_not_N,
-        amplicons_to_fail=amplicons_to_fail,
-        debug=debug,
-    )
-    if not debug:
-        utils.rm_rf(polish_root_dir)
+    if debug:
+        polish_root_dir = os.path.join(outdir, "Amplicon_polish")
+        os.mkdir(polish_root_dir)
+    else:
+        polish_root_dir = tempfile.mkdtemp(prefix="viridian_polish_")
+
+    logging.info(f"Start polishing each amplicon. Directory: {polish_root_dir}")
+    try:
+        polish_each_amplicon(
+            ref_genome,
+            amplicons,
+            bam,
+            polish_root_dir,
+            min_mean_coverage=min_mean_coverage,
+            target_coverage=target_coverage,
+            read_end_trim=read_end_trim,
+            read_map_tolerance=read_map_tolerance,
+            min_read_length=min_read_length,
+            racon_iterations=racon_iterations,
+            min_depth_for_not_N=min_depth_for_not_N,
+            amplicons_to_fail=amplicons_to_fail,
+            debug=debug,
+        )
+    finally:
+        if not debug:
+            utils.rm_rf(polish_root_dir)
 
     logging.info("Finished polishing each amplicon")
     json_data["run_summary"]["successful_amplicons"] = len([a for a in amplicons if a.assemble_success])
