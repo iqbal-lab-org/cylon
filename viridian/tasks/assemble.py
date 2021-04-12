@@ -2,6 +2,9 @@ from viridian import assemble, utils
 
 
 def run(options):
+    if not utils.look_for_required_binaries_in_path():
+        raise Exception("At least one required program was not found in $PATH. Cannot continue")
+
     if options.bam is None:
         if options.reads_to_map is None:
             raise Exception("Must provide either --bam or --reads_to_map. Cannot continue")

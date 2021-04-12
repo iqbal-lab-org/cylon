@@ -1,6 +1,7 @@
 import logging
 import os
 import pysam
+import shutil
 import subprocess
 import sys
 
@@ -30,6 +31,20 @@ def syscall(command, allow_fail=False, cwd=None):
 
     logging.debug(f"Command finished with return code {completed_process.returncode}: {command}")
     return completed_process
+
+
+def look_for_required_binaries_in_path():
+    expected_binaries = ["racon", "minimap2"]
+    results = {}
+    all_ok = True
+    for binary in expected_binaries:
+        results[binary] = shutil.which(binary)
+        if results[binary] is None:
+            logging.warning(f"Required dependency not found in $PATH: {binary}")
+            all_ok = False
+        else:
+            logging.info(f"Found dependency {binary} in $PATH: {results[binary]}")
+    return all_ok
 
 
 def load_single_seq_fasta(infile):
