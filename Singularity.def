@@ -19,7 +19,6 @@ export LANG=C.UTF-8
     export LANG=C.UTF-8
 
     /viridian/install_dependencies.sh /bioinf-tools
-    pip3 install tox
     cd /viridian
     tox
     # Getting pysam issue, complaining cython not found. So install it first.

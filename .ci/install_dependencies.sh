@@ -20,6 +20,7 @@ apt-get install -y \
   wget \
   zlib1g-dev
 
+pip3 install tox
 
 if [ ! -d $install_root ]; then
   mkdir $install_root
