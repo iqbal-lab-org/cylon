@@ -38,7 +38,9 @@ def main(args=None):
     )
     subparser_assemble.add_argument("outdir", help="Output directory")
 
-    reads_group = subparser_assemble.add_argument_group("Reads options. Must use: --bam; or --reads_to_map; or --reads_to_map and --mates_to_map")
+    reads_group = subparser_assemble.add_argument_group(
+        "Reads options. Must use: --bam; or --reads_to_map; or --reads_to_map and --mates_to_map"
+    )
     reads_group.add_argument(
         "--bam",
         help="Input reads in a sorted indexed BAM file",
@@ -90,7 +92,7 @@ def main(args=None):
     )
     subparser_assemble.add_argument(
         "--min_read_length",
-        help="Only use reads at least this long (after trimming with --read_end_trim) [%(default)s]",
+        help="Only use reads at least this long (after trimming with --read_end_trim). If the --wgs is used, then the reads must also overlap an 'amplicons' by at least this length to be used [%(default)s]",
         default=200,
         type=int,
         metavar="INT",
@@ -127,6 +129,11 @@ def main(args=None):
         "--amplicons_to_fail_file",
         help="File of amplicon names to force to count as failed. One name in each line of the file. Names must exactly match those in amplicons_bed file",
         metavar="FILENAME",
+    )
+    subparser_assemble.add_argument(
+        "--wgs",
+        help="Use this flag if the reads are not from amplicons (eg are WGS or SISPA). It drops the assumption that reads are sequenced from amplicons. This flag is essential if you do not have amplicon data.",
+        action="store_true",
     )
     subparser_assemble.add_argument(
         "--force",

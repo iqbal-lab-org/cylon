@@ -3,18 +3,25 @@ from viridian import assemble, utils
 
 def run(options):
     if not utils.look_for_required_binaries_in_path():
-        raise Exception("At least one required program was not found in $PATH. Cannot continue")
+        raise Exception(
+            "At least one required program was not found in $PATH. Cannot continue"
+        )
 
     if options.bam is None:
         if options.reads_to_map is None:
-            raise Exception("Must provide either --bam or --reads_to_map. Cannot continue")
+            raise Exception(
+                "Must provide either --bam or --reads_to_map. Cannot continue"
+            )
     else:
         if options.reads_to_map is not None:
-            raise Exception("Cannot use both options --bam and --reads_to_map. Please use one of these options")
+            raise Exception(
+                "Cannot use both options --bam and --reads_to_map. Please use one of these options"
+            )
 
     if options.mates_to_map is not None and options.reads_to_map is None:
-        raise Exception("--mates_to_map was used, but --reads_to_map was not. --reads_to_map is required by --mates_to_map")
-
+        raise Exception(
+            "--mates_to_map was used, but --reads_to_map was not. --reads_to_map is required by --mates_to_map"
+        )
 
     if options.force:
         utils.rm_rf(options.outdir)
@@ -43,5 +50,6 @@ def run(options):
         min_amp_overlap_len=options.min_amp_overlap_len,
         contig_map_end_allowance=options.contig_map_end_allowance,
         amplicons_to_fail=amplicons_to_fail,
+        wgs=options.wgs,
         debug=options.debug,
     )

@@ -3,6 +3,7 @@ import filecmp
 import os
 import pysam
 import pytest
+from unittest import mock
 
 from viridian import amplicons, utils
 
@@ -52,6 +53,38 @@ def test_expected_overlap_length():
     amplicon3 = amplicons.Amplicon("name", 11, 20)
     assert amplicon1.expected_overlap_length(amplicon2) == 3
     assert amplicon1.expected_overlap_length(amplicon3) is None
+
+
+def test_use_read_for_polishing():
+    amplicon = amplicons.Amplicon("name", 50, 100)
+    read = mock.Mock()
+    # Test start of read is within X bp of start of amplicon
+    read.reference_start = 48
+    read.reference_end = 75
+    assert amplicon.use_read_for_polishing(read, 2, None, wgs=False)
+    assert not amplicon.use_read_for_polishing(read, 1, None, wgs=False)
+
+    # Test end of read is within X bp of end of amplicon
+    read.reference_start = 75
+    read.reference_end = 103
+    assert amplicon.use_read_for_polishing(read, 3, None, wgs=False)
+    assert not amplicon.use_read_for_polishing(read, 2, None, wgs=False)
+
+    # Test overlapping read when wgs is True
+    read.reference_start = 1
+    read.reference_end = 49
+    assert not amplicon.use_read_for_polishing(read, None, 10, wgs=True)
+    read.reference_end = 60
+    assert amplicon.use_read_for_polishing(read, None, 11, wgs=True)
+    assert not amplicon.use_read_for_polishing(read, None, 12, wgs=True)
+    read.reference_start = 60
+    read.reference_end = 69
+    assert amplicon.use_read_for_polishing(read, None, 10, wgs=True)
+    assert not amplicon.use_read_for_polishing(read, None, 11, wgs=True)
+    read.reference_start = 20
+    read.reference_end = 110
+    assert amplicon.use_read_for_polishing(read, None, 51, wgs=True)
+    assert not amplicon.use_read_for_polishing(read, None, 52, wgs=True)
 
 
 def test_get_reads_for_polishing():
