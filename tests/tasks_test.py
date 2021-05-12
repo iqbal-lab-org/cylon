@@ -32,6 +32,7 @@ def test_assemble():
     options.min_amp_overlap_len = 20
     options.contig_map_end_allowance = 20
     options.amplicons_to_fail_file = None
+    options.wgs = False
     options.debug = True
     got = tasks.assemble.run(options)
     expect_fa = os.path.join(data_dir, "run_assembly_pipeline.expect.fa")

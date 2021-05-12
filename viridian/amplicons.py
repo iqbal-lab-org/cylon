@@ -65,6 +65,31 @@ class Amplicon:
     def ref_centre_coord(self):
         return self.start + int((self.end - self.start + 1) / 2)
 
+    def use_read_for_polishing(self, read, tolerance, min_overlap_length, wgs=False):
+        """Given a read, returns bool for whether or not we should use that
+        read for polishing this amplicon. Two modes: ARTIC (or whatever amplicons)
+        reads, or WGS. For ARTIC, we want reads that are in the same place as
+        the amplicon (ie they are the whole length, or contained in the amplicon).
+        The read is required to start/end within the amplicon, but with a
+        tolerance at the ends, so could start/end a little outside the amplicon.
+        For WGS, reads could map anywhere and in this case we just require that
+        the read intersects the amplicon with at least min_overlap_length
+        nucleotides"""
+        if wgs:
+            return (
+                min(self.end, read.reference_end)
+                - max(self.start, read.reference_start)
+                + 1
+                >= min_overlap_length
+            )
+        else:
+            return (
+                self.start - tolerance
+                <= read.reference_start
+                < read.reference_end
+                <= self.end + tolerance
+            )
+
     def get_reads_for_polishing(
         self,
         ref_name,
@@ -75,6 +100,7 @@ class Amplicon:
         tolerance=20,
         min_output_length=200,
         target_depth=500,
+        wgs=False,
     ):
         fwd_reads = []
         rev_reads = []
@@ -88,12 +114,7 @@ class Amplicon:
                 or read.is_qcfail
             ):
                 continue
-            if (
-                self.start - tolerance
-                <= read.reference_start
-                < read.reference_end
-                <= self.end + tolerance
-            ):
+            if self.use_read_for_polishing(read, tolerance, min_output_length, wgs=wgs):
                 # sometimes the read.query_alignment_sequence is None
                 try:
                     ok = (
@@ -171,6 +192,7 @@ class Amplicon:
         racon_iterations=3,
         min_depth_for_not_N=5,
         max_polished_N_prop=0.1,
+        wgs=False,
         debug=False,
     ):
         os.mkdir(outdir)
@@ -184,6 +206,7 @@ class Amplicon:
             tolerance=read_map_tolerance,
             min_output_length=min_read_length,
             target_depth=target_coverage,
+            wgs=wgs,
         )
         logging.debug(
             f"Extracted {total_reads} reads for amplicon {self.name}. Using {used_reads} for polishing, at mean depth of {coverage}"

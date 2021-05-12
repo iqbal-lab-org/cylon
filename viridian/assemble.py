@@ -13,13 +13,17 @@ from viridian import amplicons as amps
 from viridian import __version__ as viridian_version
 
 
-def map_reads(ref_fasta, reads, outfile, minimap_opts="-t 1 -x map-ont", mates_file=None):
+def map_reads(
+    ref_fasta, reads, outfile, minimap_opts="-t 1 -x map-ont", mates_file=None
+):
     if minimap_opts is None:
         minimap_opts = ""
     if mates_file is None:
         mates_file = ""
     sam = outfile + ".tmp.sam"
-    utils.syscall(f"minimap2 -a {minimap_opts} {ref_fasta} {reads} {mates_file} > {sam}")
+    utils.syscall(
+        f"minimap2 -a {minimap_opts} {ref_fasta} {reads} {mates_file} > {sam}"
+    )
     pysam.sort("-o", outfile, "--output-fmt", "BAM", sam)
     os.unlink(sam)
     pysam.index(outfile)
@@ -38,6 +42,7 @@ def polish_each_amplicon(
     racon_iterations=3,
     min_depth_for_not_N=5,
     amplicons_to_fail=None,
+    wgs=False,
     debug=False,
 ):
     if amplicons_to_fail is None:
@@ -65,6 +70,7 @@ def polish_each_amplicon(
             min_read_length=min_read_length,
             racon_iterations=racon_iterations,
             min_depth_for_not_N=min_depth_for_not_N,
+            wgs=wgs,
             debug=debug,
         )
         ok = "yes" if amplicon.assemble_success else "no"
@@ -97,6 +103,7 @@ def run_assembly_pipeline(
     min_amp_overlap_len=20,
     contig_map_end_allowance=20,
     amplicons_to_fail=None,
+    wgs=False,
     debug=False,
 ):
     start_time = datetime.datetime.now()
@@ -131,7 +138,13 @@ def run_assembly_pipeline(
         assert reads_fastaq is not None
         logging.info("Reads in FASTA/FASTQ format provided. Mapping reads")
         sorted_bam = os.path.join(outdir, "map_reads.bam")
-        map_reads(ref_fasta, reads_fastaq, sorted_bam, minimap_opts=minimap_opts, mates_file=mates_fastaq)
+        map_reads(
+            ref_fasta,
+            reads_fastaq,
+            sorted_bam,
+            minimap_opts=minimap_opts,
+            mates_file=mates_fastaq,
+        )
         logging.info("Finished mapping reads")
     else:
         assert reads_fastaq is None
@@ -158,6 +171,7 @@ def run_assembly_pipeline(
             racon_iterations=racon_iterations,
             min_depth_for_not_N=min_depth_for_not_N,
             amplicons_to_fail=amplicons_to_fail,
+            wgs=wgs,
             debug=debug,
         )
     finally:
@@ -165,7 +179,9 @@ def run_assembly_pipeline(
             utils.rm_rf(polish_root_dir)
 
     logging.info("Finished polishing each amplicon")
-    json_data["run_summary"]["successful_amplicons"] = len([a for a in amplicons if a.assemble_success])
+    json_data["run_summary"]["successful_amplicons"] = len(
+        [a for a in amplicons if a.assemble_success]
+    )
     if json_data["run_summary"]["successful_amplicons"] == 0:
         logging.warning("No amplicons successfully polished!")
         consensus = None
@@ -188,7 +204,7 @@ def run_assembly_pipeline(
         json_data["run_summary"]["made_consensus"] = True
     json_data["amplicons"] = amps.amplicons_to_list_of_dicts(amplicons)
     json_data["run_summary"]["finished_running"] = True
-    end_time =  datetime.datetime.now()
+    end_time = datetime.datetime.now()
     json_data["run_summary"]["end_time"] = end_time.replace(microsecond=0).isoformat()
     json_data["run_summary"]["run_time"] = str(end_time - start_time)
     with open(json_out, "w") as f:
