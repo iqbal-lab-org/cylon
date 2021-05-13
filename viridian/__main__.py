@@ -86,7 +86,7 @@ def main(args=None):
     subparser_assemble.add_argument(
         "--read_map_tolerance",
         help="Max allowed distance read start or end can be outside amplicon coords [%(default)s]",
-        default=20,
+        default=5,
         type=int,
         metavar="INT",
     )
