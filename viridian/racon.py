@@ -18,7 +18,7 @@ def run_racon(seq_to_polish, reads_filename, outprefix, debug=False):
         f"minimap2 -a -x map-ont -t 1 {fasta_to_polish} {reads_filename} > {sam}"
     )
     completed_process = utils.syscall(
-        f"racon {reads_filename} {sam} {fasta_to_polish}", allow_fail=True
+        f"racon --no-trimming {reads_filename} {sam} {fasta_to_polish}", allow_fail=True
     )
     if completed_process.returncode != 0:
         return None
