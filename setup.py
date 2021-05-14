@@ -7,7 +7,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="viridian",
-    version="0.0.1",
+    version="0.1.0",
     description="Virus assembler from amplicon sequencing reads",
     packages=find_packages(),
     author="Martin Hunt",
