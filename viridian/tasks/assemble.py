@@ -52,4 +52,5 @@ def run(options):
         amplicons_to_fail=amplicons_to_fail,
         wgs=options.wgs,
         debug=options.debug,
+        command_line_args=options,
     )

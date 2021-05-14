@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import json
 import logging
@@ -105,15 +106,27 @@ def run_assembly_pipeline(
     amplicons_to_fail=None,
     wgs=False,
     debug=False,
+    command_line_args=None,
 ):
+    # Make a dict of the command line options to go in the JSON output file.
+    # The tests don't use argparse (they use Mock), which means convert to dict
+    # doesn't work. Don't care about that case anyway in the final output, so
+    # just set to None
+    if isinstance(command_line_args, argparse.Namespace):
+        options_dict = {k: v for k, v in vars(command_line_args).items() if k != "func"}
+    else:
+        options_dict = None
+
     start_time = datetime.datetime.now()
     os.mkdir(outdir)
     json_out = os.path.join(outdir, "run_info.json")
+
     json_data = {
         "run_summary": {
             "total_amplicons": None,
             "successful_amplicons": None,
             "command": " ".join(sys.argv),
+            "options": options_dict,
             "cwd": os.getcwd(),
             "version": viridian_version,
             "finished_running": False,
