@@ -36,21 +36,19 @@ Required input:
 
 Run using a mapped BAM file of ONT reads:
 ```
-viridian assemble --bam reads.bam ref.fasta amplicons.bed outdir
+viridian assemble --bam reads.bam ont ref.fasta amplicons.bed outdir
 ```
 
 Run using a FASTQ file of ONT reads:
 ```
-viridian assemble --reads_to_map reads.fastq ref.fasta amplicons.bed outdir
+viridian assemble --reads_to_map reads.fastq ont ref.fasta amplicons.bed outdir
 ```
 
 Run using two FASTQ files of paired Illumina reads:
 ```
 viridian assemble \
   --reads_to_map reads1.fastq --mates_to_map reads2.fastq \
-  --minimap_opts "-t 1 -x sr" \
-  --min_read_length 50 \
-  ref.fasta amplicons.bed outdir
+  illumina ref.fasta amplicons.bed outdir
 ```
 
 
