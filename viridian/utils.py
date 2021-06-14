@@ -54,7 +54,9 @@ def load_single_seq_fasta(infile):
         raise Exception(
             f"Expected exatcly 1 sequence in {infile} but got {len(d)} sequences"
         )
-    return list(d.values())[0]
+    ref = list(d.values())[0]
+    ref.id = ref.id.split()[0]
+    return ref
 
 
 def rm_rf(filename):
