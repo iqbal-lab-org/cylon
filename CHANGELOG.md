@@ -20,4 +20,4 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   and `"consensus": null` in the output JSON file.
 
 
-[Unreleased]: https://github.com/iqbal-lab-org/viridian/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/iqbal-lab-org/viridian/compare/v0.1.0...HEAD
