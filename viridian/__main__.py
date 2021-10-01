@@ -18,8 +18,11 @@ def tech_dependent_usage_default_string(option):
 
 def set_tech_dependent_args(args):
     for option in TECH_DEPENDENT_DEFAULTS:
-        if getattr(args, option) is None:
-            setattr(args, option, TECH_DEPENDENT_DEFAULTS[option][args.tech])
+        try:
+            if getattr(args, option) is None:
+                setattr(args, option, TECH_DEPENDENT_DEFAULTS[option][args.tech])
+        except:
+            pass
 
 
 def main(args=None):
