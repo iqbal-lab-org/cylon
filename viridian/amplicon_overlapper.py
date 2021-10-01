@@ -85,6 +85,10 @@ def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20):
     paf_lines = minimap2_out.stdout.strip().split("\n")
     mappings = {}
     for line in paf_lines:
+        logging.debug(f"mapping split contigs. paf_line: {line.rstrip()}")
+        # if there were no mappings we can get an empty line
+        if line == "":
+            continue
         fields = line.rstrip().split()
         if fields[4] != "+":
             continue
@@ -195,7 +199,10 @@ def assemble_amplicons(
         map_end_allowance=ref_map_end_allowance,
         debug=debug,
     )
-    with open(f"{outprefix}.final_assembly.fa", "w") as f:
-        seq = pyfastaq.sequences.Fasta("assembly", consensus)
-        print(seq, file=f)
+    if consensus is None:
+        logging.warning("No consensus sequence made!")
+    else:
+        with open(f"{outprefix}.final_assembly.fa", "w") as f:
+            seq = pyfastaq.sequences.Fasta("assembly", consensus)
+            print(seq, file=f)
     return consensus
