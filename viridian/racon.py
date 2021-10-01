@@ -6,7 +6,9 @@ import pyfastaq
 from viridian import utils
 
 
-def run_racon(seq_to_polish, reads_filename, outprefix, debug=False):
+def run_racon(seq_to_polish, reads_filename, outprefix, minimap_opts="-t 1 -x map-ont", debug=False):
+    if minimap_opts is None:
+        minimap_opts = "-t 1 -x map-ont"
     fasta_to_polish = f"{outprefix}.to_polish.fa"
     with open(fasta_to_polish, "w") as f:
         if not isinstance(seq_to_polish, pyfastaq.sequences.Fasta):
@@ -15,7 +17,7 @@ def run_racon(seq_to_polish, reads_filename, outprefix, debug=False):
         print(seq_to_polish, file=f)
     sam = f"{outprefix}.sam"
     utils.syscall(
-        f"minimap2 -a -x map-ont -t 1 {fasta_to_polish} {reads_filename} > {sam}"
+        f"minimap2 -a {minimap_opts} {fasta_to_polish} {reads_filename} > {sam}"
     )
     completed_process = utils.syscall(
         f"racon --no-trimming {reads_filename} {sam} {fasta_to_polish}", allow_fail=True
@@ -36,7 +38,7 @@ def run_racon(seq_to_polish, reads_filename, outprefix, debug=False):
 
 
 def run_racon_iterations(
-    seq_to_polish, reads_filename, outdir, max_iterations=3, debug=False
+    seq_to_polish, reads_filename, outdir, max_iterations=3, debug=False, minimap_opts=None,
 ):
     reads_filename = os.path.abspath(reads_filename)
     os.mkdir(outdir)
@@ -44,7 +46,7 @@ def run_racon_iterations(
     for iteration in range(max_iterations):
         logging.debug(f"Start racon iteration {iteration}")
         outprefix = os.path.join(outdir, f"racon.{iteration}")
-        polished_seq = run_racon(seq_to_polish, reads_filename, outprefix, debug=debug)
+        polished_seq = run_racon(seq_to_polish, reads_filename, outprefix, debug=debug, minimap_opts=minimap_opts)
         if polished_seq is None:
             return None
         if debug:

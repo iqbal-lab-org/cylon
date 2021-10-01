@@ -194,6 +194,7 @@ class Amplicon:
         max_polished_N_prop=0.1,
         wgs=False,
         debug=False,
+        minimap_opts=None,
     ):
         os.mkdir(outdir)
         reads_file = os.path.join(outdir, "reads.fa")
@@ -225,7 +226,9 @@ class Amplicon:
             racon_dir,
             debug=debug,
             max_iterations=racon_iterations,
+            minimap_opts=minimap_opts,
         )
+        logging.debug(f"polished_seq: {self.polished_seq}")
         if self.polished_seq is None:
             self.polish_data["Comments"].append("No sequenced returned from racon")
             return
@@ -237,6 +240,7 @@ class Amplicon:
             min_depth=min_depth_for_not_N,
             debug=debug,
         )
+        logging.debug(f"masked: {self.masked_seq}")
         masked_strip_ns = self.masked_seq.strip("N")
         if len(masked_strip_ns) == 0:
             proportion_masked = 0

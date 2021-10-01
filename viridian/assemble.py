@@ -45,6 +45,7 @@ def polish_each_amplicon(
     amplicons_to_fail=None,
     wgs=False,
     debug=False,
+    minimap_opts=None,
 ):
     if amplicons_to_fail is None:
         amplicons_to_fail = set()
@@ -73,6 +74,7 @@ def polish_each_amplicon(
             min_depth_for_not_N=min_depth_for_not_N,
             wgs=wgs,
             debug=debug,
+            minimap_opts=minimap_opts,
         )
         ok = "yes" if amplicon.assemble_success else "no"
         logging.debug(f"Finish polishing amplicon {amplicon.name}. Success: {ok}")
@@ -186,6 +188,7 @@ def run_assembly_pipeline(
             amplicons_to_fail=amplicons_to_fail,
             wgs=wgs,
             debug=debug,
+            minimap_opts=minimap_opts,
         )
     finally:
         if not debug:
