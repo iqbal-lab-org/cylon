@@ -34,7 +34,7 @@ def run(options):
 
     return assemble.run_assembly_pipeline(
         options.ref_fasta,
-        options.amplicons_bed,
+        options.amplicons_json,
         options.outdir,
         sorted_bam=options.bam,
         reads_fastaq=options.reads_to_map,

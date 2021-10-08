@@ -1,6 +1,7 @@
 from difflib import SequenceMatcher
 import json
 import logging
+from operator import attrgetter
 import os
 import random
 
@@ -10,10 +11,12 @@ from viridian import racon, utils
 
 
 class Amplicon:
-    def __init__(self, name, start, end):
+    def __init__(self, name, start, end, left_primer_length, right_primer_length):
         self.name = name
         self.start = start
         self.end = end
+        self.left_primer_length = left_primer_length
+        self.right_primer_length = right_primer_length
         self.polished_seq = None
         self.masked_seq = None
         self.assemble_success = False
@@ -38,6 +41,8 @@ class Amplicon:
             "name": self.name,
             "start": self.start + 1,
             "end": self.end + 1,
+            "left_primer_length": self.left_primer_length,
+            "right_primer_length": self.right_primer_length,
             "polished_seq": self.polished_seq,
             "polished_masked_seq": self.masked_seq,
             "assemble_success": self.assemble_success,
@@ -286,31 +291,16 @@ class Amplicon:
         return self.end - other.start + 1
 
 
-def load_amplicons_bed_file(infile):
-    amplicons = []
-
+def load_amplicons_json_file(infile):
     with open(infile) as f:
-        for line in f:
-            if line.startswith("#"):
-                continue
-            name, start, end = line.rstrip().split("\t")
-            amplicons.append(Amplicon(name, int(start), int(end) - 1))
-
-    return amplicons
-
-
-def load_amplicons_from_fasta_and_bed(fasta, bed):
-    amplicons = load_amplicons_bed_file(bed)
-    amp_lookup = {a.name: i for i, a in enumerate(amplicons)}
-    reader = pyfastaq.sequences.file_reader(fasta)
-    for seq in reader:
-        name = seq.id.split()[0]
-        if name not in amp_lookup:
-            raise Exception(
-                f"Amplicon name {name} found in input FASTA file but not in BED file. Cannot continue"
-            )
-        amplicons[amp_lookup[name]].masked_seq = seq.seq
-        amplicons[amp_lookup[name]].assemble_success = True
+        data = json.load(f)
+    amplicons = []
+    for name, d in data.items():
+        left_primer_len = d["left_primer_end_max"] - d["start"] + 1
+        right_primer_len = d["end"] - d["right_primer_start_min"] + 1
+        amplicons.append(
+            Amplicon(name, d["start"], d["end"], left_primer_len, right_primer_len))
+    amplicons.sort(key=attrgetter("start"))
     return amplicons
 
 

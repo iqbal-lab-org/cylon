@@ -1,5 +1,4 @@
 __all__ = [
-    "amplicon_overlap",
     "assemble",
 ]
 

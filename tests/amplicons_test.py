@@ -12,7 +12,7 @@ data_dir = os.path.join(this_dir, "data", "amplicons")
 
 
 def test_masked_seq_centre_coord():
-    amplicon = amplicons.Amplicon("name", 0, 10)
+    amplicon = amplicons.Amplicon("name", 0, 10, 1, 1)
     assert amplicon.masked_seq_centre_coord() is None
     amplicon.masked_seq = "ACT"
     assert amplicon.masked_seq_centre_coord() == 1
@@ -25,38 +25,38 @@ def test_masked_seq_centre_coord():
 
 
 def test_ref_centre_coord():
-    amplicon = amplicons.Amplicon("name", 0, 9)
+    amplicon = amplicons.Amplicon("name", 0, 9, 1, 1)
     assert amplicon.ref_centre_coord() == 5
-    amplicon = amplicons.Amplicon("name", 0, 10)
+    amplicon = amplicons.Amplicon("name", 0, 10, 1, 1)
     assert amplicon.ref_centre_coord() == 5
-    amplicon = amplicons.Amplicon("name", 0, 11)
+    amplicon = amplicons.Amplicon("name", 0, 11, 1, 1)
     assert amplicon.ref_centre_coord() == 6
-    amplicon = amplicons.Amplicon("name", 0, 12)
+    amplicon = amplicons.Amplicon("name", 0, 12, 1, 1)
     assert amplicon.ref_centre_coord() == 6
-    amplicon = amplicons.Amplicon("name", 0, 13)
+    amplicon = amplicons.Amplicon("name", 0, 13, 1, 1)
     assert amplicon.ref_centre_coord() == 7
-    amplicon = amplicons.Amplicon("name", 10, 19)
+    amplicon = amplicons.Amplicon("name", 10, 19, 1, 1)
     assert amplicon.ref_centre_coord() == 15
-    amplicon = amplicons.Amplicon("name", 10, 20)
+    amplicon = amplicons.Amplicon("name", 10, 20, 1, 1)
     assert amplicon.ref_centre_coord() == 15
-    amplicon = amplicons.Amplicon("name", 10, 21)
+    amplicon = amplicons.Amplicon("name", 10, 21, 1, 1)
     assert amplicon.ref_centre_coord() == 16
-    amplicon = amplicons.Amplicon("name", 10, 22)
+    amplicon = amplicons.Amplicon("name", 10, 22, 1, 1)
     assert amplicon.ref_centre_coord() == 16
-    amplicon = amplicons.Amplicon("name", 10, 23)
+    amplicon = amplicons.Amplicon("name", 10, 23, 1, 1)
     assert amplicon.ref_centre_coord() == 17
 
 
 def test_expected_overlap_length():
-    amplicon1 = amplicons.Amplicon("name", 0, 10)
-    amplicon2 = amplicons.Amplicon("name", 8, 20)
-    amplicon3 = amplicons.Amplicon("name", 11, 20)
+    amplicon1 = amplicons.Amplicon("name", 0, 10, 1, 1)
+    amplicon2 = amplicons.Amplicon("name", 8, 20, 1, 1)
+    amplicon3 = amplicons.Amplicon("name", 11, 20, 1, 1)
     assert amplicon1.expected_overlap_length(amplicon2) == 3
     assert amplicon1.expected_overlap_length(amplicon3) is None
 
 
 def test_use_read_for_polishing():
-    amplicon = amplicons.Amplicon("name", 50, 100)
+    amplicon = amplicons.Amplicon("name", 50, 100, 1, 1)
     read = mock.Mock()
     # Test start of read is within X bp of start of amplicon
     read.reference_start = 48
@@ -92,7 +92,7 @@ def test_get_reads_for_polishing():
     bam = pysam.AlignmentFile(reads_bam, "rb")
     reads_out = "tmp.get_reads_for_polishing.reads.fa"
     utils.rm_rf(reads_out)
-    amplicon = amplicons.Amplicon("amp1", 59, 419)
+    amplicon = amplicons.Amplicon("amp1", 59, 419, 1, 1)
 
     got_reads, got_used, got_cov = amplicon.get_reads_for_polishing(
         "ref1",
@@ -111,7 +111,7 @@ def test_get_reads_for_polishing():
     assert filecmp.cmp(reads_out, expect_reads, shallow=False)
     os.unlink(reads_out)
 
-    amplicon = amplicons.Amplicon("amp1", 50, 100)
+    amplicon = amplicons.Amplicon("amp1", 50, 100, 1, 1)
     got_reads, got_used, got_cov = amplicon.get_reads_for_polishing(
         "ref2",
         bam,
@@ -131,7 +131,7 @@ def test_get_reads_for_polishing():
 def test_polish():
     ref_fasta = os.path.join(data_dir, "polish.ref.fa")
     ref_genome = utils.load_single_seq_fasta(ref_fasta)
-    amplicon = amplicons.Amplicon("amplicon1", 60, 259)
+    amplicon = amplicons.Amplicon("amplicon1", 60, 259, 1, 1)
     reads_bam = os.path.join(data_dir, "polish.bam")
     bam = pysam.AlignmentFile(reads_bam, "rb")
     outdir = "tmp.polish.out"
@@ -158,7 +158,7 @@ def test_polish():
     # The reads are such that there's a dip in coverage in the middle of the
     # amplicon. Setting min_depth_for_not_N higher makes this region get
     # masked, and then the amplicon should get failed
-    amplicon = amplicons.Amplicon("amplicon1", 60, 259)
+    amplicon = amplicons.Amplicon("amplicon1", 60, 259, 1, 1)
     amplicon.polish(
         ref_genome,
         bam,
@@ -181,8 +181,8 @@ def test_polish():
 
 def test_masked_overlap():
     Match = collections.namedtuple("Match", ("a", "b", "size"))
-    amp1 = amplicons.Amplicon("a1", 50, 100)
-    amp2 = amplicons.Amplicon("a2", 90, 150)
+    amp1 = amplicons.Amplicon("a1", 50, 100, 1, 1)
+    amp2 = amplicons.Amplicon("a2", 90, 150, 1, 1)
     assert amp1.masked_overlap(amp2, 10) is None
     amp2.masked_seq = "AAAAAAAAAAAAAAAAAATGCTGAACAGTCCCCCCC"
     assert amp1.masked_overlap(amp2, 10) is None
@@ -205,26 +205,10 @@ def test_masked_overlap():
     assert amp1.masked_overlap(amp2, 2) == None
 
 
-def test_load_amplicons_bed_file():
+def test_load_amplicons_json_file():
     expect = [
-        amplicons.Amplicon("name1", 42, 99),
-        amplicons.Amplicon("name2", 85, 150),
+        amplicons.Amplicon("name1", 42, 99, 5, 3),
+        amplicons.Amplicon("name2", 90, 150, 2, 9),
     ]
-    infile = os.path.join(data_dir, "load_amplicons_bed_file.bed")
-    assert expect == amplicons.load_amplicons_bed_file(infile)
-
-
-def test_amplicons_from_fasta_and_bed():
-    fasta = os.path.join(data_dir, "amplicons_from_fasta_and_bed.fa")
-    bed = os.path.join(data_dir, "amplicons_from_fasta_and_bed.bed")
-    got = amplicons.load_amplicons_from_fasta_and_bed(fasta, bed)
-    expect = [
-        amplicons.Amplicon("name1", 42, 99),
-        amplicons.Amplicon("name2", 85, 150),
-        amplicons.Amplicon("name3", 140, 249),
-    ]
-    expect[0].masked_seq = "ACGT"
-    expect[2].masked_seq = "GGG"
-    expect[0].assemble_success = True
-    expect[2].assemble_success = True
-    assert got == expect
+    infile = os.path.join(data_dir, "load_amplicons_json_file.json")
+    assert expect == amplicons.load_amplicons_json_file(infile)

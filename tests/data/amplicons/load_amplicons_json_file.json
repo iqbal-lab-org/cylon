@@ -1,0 +1,14 @@
+{
+  "name1": {
+    "start": 42,
+    "end": 99,
+    "left_primer_end_max": 46,
+    "right_primer_start_min": 97
+  },
+  "name2": {
+    "start": 90,
+    "end": 150,
+    "left_primer_end_max": 91,
+    "right_primer_start_min": 142
+  }
+}
