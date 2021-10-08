@@ -134,7 +134,7 @@ class Amplicon:
                     # pair probably have the same name. So add /2 if it's the
                     # second of a pair
                     if read.is_paired and read.is_read2:
-                        read_name = read.query_name + "/2"
+                        read_name = read.query_name + "_2"
                     else:
                         read_name = read.query_name
 
