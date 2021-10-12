@@ -52,7 +52,9 @@ The `start` and `end` entries are the positions of the start and end of the
 amplicon.
 `left_primer_end` is the rightmost position of the end of the left primer,
 and `right_primer_start` is the leftmost position
-of the right primers. (Other key/values can be inside the dictionary
+of the right primer. This means for each amplicon we should have:
+`start` < `left_primer_end` < `right_primer_start` < `end`.
+(Other key/values can be inside the dictionary
 for each amplicon, but will simply be ignored).
 
 
