@@ -39,7 +39,7 @@ The amplicons JSON file must look like this:
   "amplicon1": {
     "start": 10,
     "end": 399,
-    "left_primer_end": 10,
+    "left_primer_end": 30,
     "right_primer_start": 390
   },
   "amplicon2": { ... etc ...}
