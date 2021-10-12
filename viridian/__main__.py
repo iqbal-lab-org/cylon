@@ -45,7 +45,7 @@ def main(args=None):
     subparser_assemble = subparsers.add_parser(
         "assemble",
         help="Reference-guided assembly from reads",
-        usage="viridian assemble [options] <tech> <ref_fasta> <amplicons_bed> <outdir>",
+        usage="viridian assemble [options] <tech> <ref_fasta> <amplicons_json> <outdir>",
         description="Reference-guided assembly from reads",
         epilog="Required: --bam, or --reads_to_map, or both --reads_to_map and --mates_to_map",
     )
@@ -60,7 +60,7 @@ def main(args=None):
         help="FASTA file of reference genome",
     )
     subparser_assemble.add_argument(
-        "amplicons_bed", help="BED file of amplicon names and positions"
+        "amplicons_json", help="BED file of amplicon names and positions"
     )
     subparser_assemble.add_argument("outdir", help="Output directory")
 
@@ -150,7 +150,7 @@ def main(args=None):
     )
     subparser_assemble.add_argument(
         "--amplicons_to_fail_file",
-        help="File of amplicon names to force to count as failed. One name in each line of the file. Names must exactly match those in amplicons_bed file",
+        help="File of amplicon names to force to count as failed. One name in each line of the file. Names must exactly match those in amplicons_json file",
         metavar="FILENAME",
     )
     subparser_assemble.add_argument(
@@ -165,40 +165,6 @@ def main(args=None):
     )
     subparser_assemble.set_defaults(func=viridian.tasks.assemble.run)
 
-    # ------------------------ amplicon_overlap --------------------------------
-    subparser_amp_over = subparsers.add_parser(
-        "amplicon_overlap",
-        help="Assemble separate amplicons seqs into consensus",
-        usage="viridian assemble [options] <ref_fasta> <amplicons_bed> <amplicons_fasta> <outdir>",
-        description="Assemble separate amplicons seqs into consensus",
-    )
-    subparser_amp_over.add_argument(
-        "ref_fasta",
-        help="FASTA file of reference genome",
-    )
-    subparser_amp_over.add_argument(
-        "amplicons_bed", help="BED file of amplicon names and positions"
-    )
-    subparser_amp_over.add_argument(
-        "amplicons_fasta",
-        help="FASTA file of amplicons to be overlapped to make a consensus sequence. Names must exactly match those in BED file. Amplicons in this file must be a subset of amplicons in the BED file.",
-    )
-    subparser_amp_over.add_argument("outdir", help="Output directory")
-    subparser_amp_over.add_argument(
-        "--min_amp_overlap_len",
-        help="Minimum perfect overlap length required when overlapping each polished amplicon [%(default)s]",
-        default=20,
-        type=int,
-        metavar="INT",
-    )
-    subparser_amp_over.add_argument(
-        "--contig_map_end_allowance",
-        help="When mapping contigs ends to the reference to fill in failed amplicons with Ns, allow the mapping to start up to this distance away from the contig end [%(default)s]",
-        default=20,
-        type=int,
-        metavar="INT",
-    )
-    subparser_amp_over.set_defaults(func=viridian.tasks.amplicon_overlap.run)
 
     args = parser.parse_args()
     set_tech_dependent_args(args)

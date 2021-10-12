@@ -90,7 +90,7 @@ def polish_each_amplicon(
 
 def run_assembly_pipeline(
     ref_fasta,
-    amplicons_bed,
+    amplicons_json,
     outdir,
     sorted_bam=None,
     reads_fastaq=None,
@@ -145,9 +145,9 @@ def run_assembly_pipeline(
 
     ref_genome = utils.load_single_seq_fasta(ref_fasta)
     logging.info(f"Loaded ref genome {ref_genome.id}")
-    amplicons = amps.load_amplicons_bed_file(amplicons_bed)
+    amplicons = amps.load_amplicons_json_file(amplicons_json)
     json_data["run_summary"]["total_amplicons"] = len(amplicons)
-    logging.info(f"Loaded amplicons file {amplicons_bed}")
+    logging.info(f"Loaded amplicons file {amplicons_json}")
 
     if sorted_bam is None:
         assert reads_fastaq is not None

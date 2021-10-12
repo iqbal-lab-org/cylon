@@ -28,27 +28,51 @@ to build the container `viridian.img`.
 
 Required input:
 1. Reference FASTA file
-2. BED file of amplicons. Column 1 = name of amplicon, columns 2 and 3 are start
+2. JSON file of amplicons. Described below.
    end end positions of the amplicons
 3. Reads, either in a sorted mapped indexed BAM file, or in a FASTA/FASTQ file
 (or two FASTA/FASTQ files for paired reads).
 
+The amplicons JSON file must look like this:
+```
+{
+  "amplicon1": {
+    "start": 10,
+    "end": 399,
+    "left_primer_end": 10,
+    "right_primer_start": 390
+  },
+  "amplicon2": { ... etc ...}
+}
+```
+The keys are the amplicon names, and the values are the details for each
+amplicon.
+All coordinates are 0-based inclusive.
+The `start` and `end` entries are the positions of the start and end of the
+amplicon.
+`left_primer_end` is the rightmost position of the end of the left primer,
+and `right_primer_start` is the leftmost position
+of the right primer. This means for each amplicon we should have:
+`start` < `left_primer_end` < `right_primer_start` < `end`.
+(Other key/values can be inside the dictionary
+for each amplicon, but will simply be ignored).
+
 
 Run using a mapped BAM file of ONT reads:
 ```
-viridian assemble --bam reads.bam ont ref.fasta amplicons.bed outdir
+viridian assemble --bam reads.bam ont ref.fasta amplicons.json outdir
 ```
 
 Run using a FASTQ file of ONT reads:
 ```
-viridian assemble --reads_to_map reads.fastq ont ref.fasta amplicons.bed outdir
+viridian assemble --reads_to_map reads.fastq ont ref.fasta amplicons.json outdir
 ```
 
 Run using two FASTQ files of paired Illumina reads:
 ```
 viridian assemble \
   --reads_to_map reads1.fastq --mates_to_map reads2.fastq \
-  illumina ref.fasta amplicons.bed outdir
+  illumina ref.fasta amplicons.json outdir
 ```
 
 

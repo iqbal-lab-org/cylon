@@ -10,12 +10,12 @@ data_dir = os.path.join(this_dir, "data", "assemble")
 def test_run_assembly_pipeline():
     ref_fa = os.path.join(data_dir, "run_assembly_pipeline.ref.fa")
     reads_fa = os.path.join(data_dir, "run_assembly_pipeline.reads.fa")
-    amplicon_bed = os.path.join(data_dir, "run_assembly_pipeline.amplicons.bed")
+    amplicon_json = os.path.join(data_dir, "run_assembly_pipeline.amplicons.json")
     outdir = "tmp.run_assembly_pipeline"
     utils.rm_rf(outdir)
     got = assemble.run_assembly_pipeline(
         ref_fa,
-        amplicon_bed,
+        amplicon_json,
         outdir,
         reads_fastaq=reads_fa,
         debug=True,
@@ -28,7 +28,7 @@ def test_run_assembly_pipeline():
     expect_seq = utils.load_single_seq_fasta(expect_fa)
     # expected fasta is the fasta used to generate the reads. But the amplicons
     # don't cover the whole genome, so we expect to miss the ends
-    assert got == expect_seq[11:-10]
+    assert got == expect_seq[11:979]
     consensus_from_file = utils.load_single_seq_fasta(
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
@@ -38,7 +38,7 @@ def test_run_assembly_pipeline():
     # Rerun, but test force failing the first amplicon
     got = assemble.run_assembly_pipeline(
         ref_fa,
-        amplicon_bed,
+        amplicon_json,
         outdir,
         reads_fastaq=reads_fa,
         debug=True,
@@ -52,7 +52,7 @@ def test_run_assembly_pipeline():
     expect_seq = utils.load_single_seq_fasta(expect_fa)
     # This time, we should not have the first amplicon, and the returned
     # sequence should start with the second amplicon
-    assert got == expect_seq[351:-10]
+    assert got == expect_seq[356:979]
     consensus_from_file = utils.load_single_seq_fasta(
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
