@@ -19,20 +19,20 @@ amplicons_json_data = {
   "a1": {
     "start": 10,
     "end": 399,
-    "left_primer_end_max": 10,
-    "right_primer_start_min": 390
+    "left_primer_end": 10,
+    "right_primer_start": 390
   },
   "a2": {
     "start": 350,
     "end": 799,
-    "left_primer_end_max": 355,
-    "right_primer_start_min": 790
+    "left_primer_end": 355,
+    "right_primer_start": 790
   },
   "a3": {
     "start": 740,
     "end": 989,
-    "left_primer_end_max": 745,
-    "right_primer_start_min": 980
+    "left_primer_end": 745,
+    "right_primer_start": 980
   }
 }
 

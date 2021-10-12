@@ -39,8 +39,8 @@ The amplicons JSON file must look like this:
   "amplicon1": {
     "start": 10,
     "end": 399,
-    "left_primer_end_max": 10,
-    "right_primer_start_min": 390
+    "left_primer_end": 10,
+    "right_primer_start": 390
   },
   "amplicon2": { ... etc ...}
 }
@@ -49,10 +49,10 @@ The keys are the amplicon names, and the values are the details for each
 amplicon.
 All coordinates are 0-based inclusive.
 The `start` and `end` entries are the positions of the start and end of the
-amplicon. Some amplicons have more than one
-primer - the `left_primer_end_max` is the rightmost position of the end
-of all the left primers, and `right_primer_start_min` is the leftmost position
-of all the right primers. (Other key/values can be inside the dictionary
+amplicon.
+`left_primer_end` is the rightmost position of the end of the left primer,
+and `right_primer_start` is the leftmost position
+of the right primers. (Other key/values can be inside the dictionary
 for each amplicon, but will simply be ignored).
 
 

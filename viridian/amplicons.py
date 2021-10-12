@@ -296,8 +296,8 @@ def load_amplicons_json_file(infile):
         data = json.load(f)
     amplicons = []
     for name, d in data.items():
-        left_primer_len = d["left_primer_end_max"] - d["start"] + 1
-        right_primer_len = d["end"] - d["right_primer_start_min"] + 1
+        left_primer_len = d["left_primer_end"] - d["start"] + 1
+        right_primer_len = d["end"] - d["right_primer_start"] + 1
         amplicons.append(
             Amplicon(name, d["start"], d["end"], left_primer_len, right_primer_len))
     amplicons.sort(key=attrgetter("start"))
