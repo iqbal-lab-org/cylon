@@ -7,6 +7,16 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Backwards incompatible change: now uses primer coordinates. The amplicon
+  (and primer) information must be given in a JSON file, instead of the previous
+  BED file.
+
+### Removed
+
+- Removed the command line function `viridian amplicon_overlap`.
+
 ### Fixed
 
 - Handle whitespace in sequence name line of input FASTA file
@@ -18,6 +28,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Fixed case viridian would crash when no amplicon contigs map, and so no
   consensus sequence was made. Now it finishes, with `"made_consensus": false`
   and `"consensus": null` in the output JSON file.
+
+- Fixed where Racon could sometimes silently fail due to how reads were sampled
+  for an amplicon, resulting in no sequence for that amplicon.
 
 
 [Unreleased]: https://github.com/iqbal-lab-org/viridian/compare/v0.1.0...HEAD
