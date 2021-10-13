@@ -294,8 +294,10 @@ class Amplicon:
 def load_amplicons_json_file(infile):
     with open(infile) as f:
         data = json.load(f)
+    if "amplicons" not in data:
+        raise Exception(f"No 'amplicons' entry found in JSON file {infile}. Cannot continue")
     amplicons = []
-    for name, d in data.items():
+    for name, d in data["amplicons"].items():
         left_primer_len = d["left_primer_end"] - d["start"] + 1
         right_primer_len = d["end"] - d["right_primer_start"] + 1
         amplicons.append(

@@ -1,20 +1,22 @@
 {
-  "a1": {
-    "start": 10,
-    "end": 399,
-    "left_primer_end": 10,
-    "right_primer_start": 390
-  },
-  "a2": {
-    "start": 350,
-    "end": 799,
-    "left_primer_end": 355,
-    "right_primer_start": 790
-  },
-  "a3": {
-    "start": 740,
-    "end": 989,
-    "left_primer_end": 745,
-    "right_primer_start": 980
+  "amplicons": {
+    "a1": {
+      "start": 10,
+      "end": 399,
+      "left_primer_end": 10,
+      "right_primer_start": 390
+    },
+    "a2": {
+      "start": 350,
+      "end": 799,
+      "left_primer_end": 355,
+      "right_primer_start": 790
+    },
+    "a3": {
+      "start": 740,
+      "end": 989,
+      "left_primer_end": 745,
+      "right_primer_start": 980
+    }
   }
 }
