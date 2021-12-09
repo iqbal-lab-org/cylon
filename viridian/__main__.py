@@ -84,7 +84,7 @@ def main(args=None):
     )
     subparser_assemble.add_argument(
         "--minimap_opts",
-        help=f"Options string to pass to minimap2. Is used for initial mapping if reads provided with --reads_to_map, otherwise is ignored. Do not use -a or -o! This string is not sanity checked - it is up to you to provide valid options. Default is to use 1 thread and the Nanopore preset [{tech_dependent_usage_default_string('minimap_opts')}]",
+        help=f"Options string to pass to minimap2. Is used for initial mapping if reads provided with --reads_to_map, otherwise is ignored. Do not use -a or -o! This string is not sanity checked - it is up to you to provide valid options [{tech_dependent_usage_default_string('minimap_opts')}]",
         metavar="STRING",
     )
     subparser_assemble.add_argument(
