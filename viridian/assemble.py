@@ -88,6 +88,12 @@ def polish_each_amplicon(
             logging.info(f"Processed {i+1} of {len(amplicons)} amplicons")
 
 
+def add_successful_amplicons_to_json_data(data, amplicons):
+    data["run_summary"]["successful_amplicons"] = len(
+        [a for a in amplicons if a.assemble_success]
+    )
+
+
 def run_assembly_pipeline(
     ref_fasta,
     amplicons_json,
@@ -195,9 +201,7 @@ def run_assembly_pipeline(
             utils.rm_rf(polish_root_dir)
 
     logging.info("Finished polishing each amplicon")
-    json_data["run_summary"]["successful_amplicons"] = len(
-        [a for a in amplicons if a.assemble_success]
-    )
+    add_successful_amplicons_to_json_data(json_data, amplicons)
     if json_data["run_summary"]["successful_amplicons"] == 0:
         logging.warning("No amplicons successfully polished!")
         consensus = None
@@ -213,6 +217,12 @@ def run_assembly_pipeline(
             debug=debug,
         )
     json_data["run_summary"]["consensus"] = consensus
+
+    # Need to recalculate successful amplicons because they can get failed
+    # during overlapping. If two adjacent amplicons have no overlap, then they
+    # both get failed.
+    add_successful_amplicons_to_json_data(json_data, amplicons)
+
     if consensus is None:
         logging.warning("Did not make consensus sequence. Please see previous warnings")
     else:
