@@ -9,7 +9,7 @@ setup(
     name="viridian",
     version="0.1.0",
     description="Virus assembler from amplicon sequencing reads",
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests"]),
     author="Martin Hunt",
     author_email="mhunt@ebi.ac.uk",
     url="https://github.com/iqbal-lab-org/viridian",
