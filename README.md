@@ -1,4 +1,4 @@
-[![Build Status](https://www.travis-ci.com/iqbal-lab-org/viridian.svg?branch=main)](https://www.travis-ci.com/iqbal-lab-org/viridian)
+![Build Status](https://github.com/iqbal-lab-org/viridian/actions/workflows/build.yaml/badge.svg)
 
 # viridian
 Virus assembler from amplicon sequencing reads
