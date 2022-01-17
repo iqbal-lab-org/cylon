@@ -19,8 +19,11 @@ def run_racon(seq_to_polish, reads_filename, outprefix, minimap_opts="-t 1 -x ma
     utils.syscall(
         f"minimap2 -a {minimap_opts} {fasta_to_polish} {reads_filename} > {sam}"
     )
+    # Appears that racon can have errors at N * (window length). Default is
+    # 500. So set it to be a bit more that the sequence we are correcting.
+    window_length = len(seq_to_polish) + 100
     completed_process = utils.syscall(
-        f"racon --no-trimming {reads_filename} {sam} {fasta_to_polish}", allow_fail=True
+        f"racon --window-length {window_length} --no-trimming {reads_filename} {sam} {fasta_to_polish}", allow_fail=True
     )
     if completed_process.returncode != 0:
         return None
