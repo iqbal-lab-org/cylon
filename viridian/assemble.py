@@ -92,7 +92,16 @@ def add_successful_amplicons_to_json_data(data, amplicons):
     data["run_summary"]["successful_amplicons"] = len(
         [a for a in amplicons if a.assemble_success]
     )
+    data["run_summary"]["amplicon_success"] = {a.name: a.assemble_success for a in amplicons}
 
+
+def add_consensus_length_N_count_to_json_data(data):
+    if data["run_summary"]["made_consensus"]:
+        data["run_summary"]["consensus_length"] = len(data["run_summary"]["consensus"])
+        data["run_summary"]["consensus_N_count"] = data["run_summary"]["consensus"].count("N")
+    else:
+        data["run_summary"]["consensus_length"] = None
+        data["run_summary"]["consensus_N_count"] = None
 
 def run_assembly_pipeline(
     ref_fasta,
@@ -228,6 +237,8 @@ def run_assembly_pipeline(
     else:
         logging.info("Finished making consensus sequence.")
         json_data["run_summary"]["made_consensus"] = True
+
+    add_consensus_length_N_count_to_json_data(json_data)
     json_data["amplicons"] = amps.amplicons_to_list_of_dicts(amplicons)
     json_data["run_summary"]["finished_running"] = True
     end_time = datetime.datetime.now()

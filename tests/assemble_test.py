@@ -1,3 +1,4 @@
+import json
 import os
 import pytest
 
@@ -57,4 +58,16 @@ def test_run_assembly_pipeline():
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
     assert got == consensus_from_file.seq
+
+    # some checks of the contents of the json summary
+    with open(os.path.join(outdir, "run_info.json")) as f:
+        run_info = json.load(f)
+    assert run_info["run_summary"]["made_consensus"] is True
+    assert run_info["run_summary"]["amplicon_success"] == {
+        "a1": False, "a2": True, "a3": True,
+    }
+    assert run_info["run_summary"]["successful_amplicons"] == 2
+    assert run_info["run_summary"]["total_amplicons"] == 3
+    assert run_info["run_summary"]["consensus_length"] == 623
+    assert run_info["run_summary"]["consensus_N_count"] == 0
     utils.rm_rf(outdir)
