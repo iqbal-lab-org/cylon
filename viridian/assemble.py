@@ -92,6 +92,7 @@ def add_successful_amplicons_to_json_data(data, amplicons):
     data["run_summary"]["successful_amplicons"] = len(
         [a for a in amplicons if a.assemble_success]
     )
+    data["run_summary"]["amplicon_success"] = {a.name: a.assemble_success for a in amplicons}
 
 
 def run_assembly_pipeline(
