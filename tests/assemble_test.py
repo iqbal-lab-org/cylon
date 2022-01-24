@@ -68,4 +68,6 @@ def test_run_assembly_pipeline():
     }
     assert run_info["run_summary"]["successful_amplicons"] == 2
     assert run_info["run_summary"]["total_amplicons"] == 3
+    assert run_info["run_summary"]["consensus_length"] == 623
+    assert run_info["run_summary"]["consensus_N_count"] == 0
     utils.rm_rf(outdir)
