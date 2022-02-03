@@ -20,6 +20,7 @@ def test_assemble():
     )
     options.outdir = outdir
     options.reads_to_map = os.path.join(data_dir, "run_assembly_pipeline.reads.fa")
+    options.reads_per_amp_dir = None
     options.mates_to_map = None
     options.minimap_opts = "-t 1 -x map-ont"
     options.min_mean_coverage = 5
@@ -62,4 +63,3 @@ def test_assemble():
     assert os.path.exists(os.path.join(options.outdir, "run_info.json"))
     utils.rm_rf(outdir)
     os.unlink(options.amplicons_to_fail_file)
-

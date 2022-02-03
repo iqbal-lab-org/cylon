@@ -13,6 +13,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   (and primer) information must be given in a JSON file, instead of the previous
   BED file.
 
+- Added command line option `--reads_per_amp_dir`
+
 ### Removed
 
 - Removed the command line function `viridian amplicon_overlap`.

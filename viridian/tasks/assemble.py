@@ -7,16 +7,19 @@ def run(options):
             "At least one required program was not found in $PATH. Cannot continue"
         )
 
-    if options.bam is None:
-        if options.reads_to_map is None:
-            raise Exception(
-                "Must provide either --bam or --reads_to_map. Cannot continue"
-            )
-    else:
-        if options.reads_to_map is not None:
-            raise Exception(
-                "Cannot use both options --bam and --reads_to_map. Please use one of these options"
-            )
+    if (
+        len(
+            [
+                x
+                for x in (options.bam, options.reads_to_map, options.reads_per_amp_dir)
+                if x is not None
+            ]
+        )
+        != 1
+    ):
+        raise Exception(
+            "Must provide exactly one of: --bam, --reads_to_map, --reads_per_amp_dir"
+        )
 
     if options.mates_to_map is not None and options.reads_to_map is None:
         raise Exception(
@@ -37,6 +40,7 @@ def run(options):
         options.amplicons_json,
         options.outdir,
         sorted_bam=options.bam,
+        reads_per_amp_dir=options.reads_per_amp_dir,
         reads_fastaq=options.reads_to_map,
         mates_fastaq=options.mates_to_map,
         minimap_opts=options.minimap_opts,

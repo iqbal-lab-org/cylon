@@ -33,8 +33,9 @@ def map_reads(
 def polish_each_amplicon(
     ref_genome,
     amplicons,
-    bam,
     outdir,
+    bam_to_slice_reads=None,
+    amplicon_to_reads_file=None,
     min_mean_coverage=25,
     target_coverage=500,
     read_end_trim=20,
@@ -47,6 +48,8 @@ def polish_each_amplicon(
     debug=False,
     minimap_opts=None,
 ):
+    if amplicon_to_reads_file is None:
+        amplicon_to_reads_file = {}
     if amplicons_to_fail is None:
         amplicons_to_fail = set()
 
@@ -63,8 +66,9 @@ def polish_each_amplicon(
         amplicon_dir = os.path.join(outdir, str(i + 1))
         amplicon.polish(
             ref_genome,
-            bam,
             amplicon_dir,
+            bam_to_slice_reads=bam_to_slice_reads,
+            reads_file=amplicon_to_reads_file.get(amplicon.name, None),
             min_mean_coverage=min_mean_coverage,
             target_coverage=target_coverage,
             read_end_trim=read_end_trim,
@@ -92,22 +96,56 @@ def add_successful_amplicons_to_json_data(data, amplicons):
     data["run_summary"]["successful_amplicons"] = len(
         [a for a in amplicons if a.assemble_success]
     )
-    data["run_summary"]["amplicon_success"] = {a.name: a.assemble_success for a in amplicons}
+    data["run_summary"]["amplicon_success"] = {
+        a.name: a.assemble_success for a in amplicons
+    }
 
 
 def add_consensus_length_N_count_to_json_data(data):
     if data["run_summary"]["made_consensus"]:
         data["run_summary"]["consensus_length"] = len(data["run_summary"]["consensus"])
-        data["run_summary"]["consensus_N_count"] = data["run_summary"]["consensus"].count("N")
+        data["run_summary"]["consensus_N_count"] = data["run_summary"][
+            "consensus"
+        ].count("N")
     else:
         data["run_summary"]["consensus_length"] = None
         data["run_summary"]["consensus_N_count"] = None
+
+
+def load_and_check_reads_amp_dir(reads_per_amp_dir, amplicons):
+    json_file = os.path.join(reads_per_amp_dir, "manifest.json")
+    with open(json_file) as f:
+        manifest = json.load(f)
+
+    if len(manifest) != len(amplicons):
+        raise Exception(
+            f"Expected {len(amplicons)} amplicons in {json_file} but got {len(manifest)}"
+        )
+
+    for amplicon in amplicons:
+        if amplicon.name not in manifest:
+            raise Exception(
+                f"Amplicon '{amplicon.name}' not found in JSON file {json_file}"
+            )
+        reads_file = manifest[amplicon.name]
+        if reads_file is None:
+            continue
+        reads_file_full_path = os.path.join(reads_per_amp_dir, reads_file)
+        if not os.path.exists(reads_file_full_path):
+            raise Exception(
+                f"Reads file for amplicon {amplicon.name} not found: {reads_file_full_path}"
+            )
+        manifest[amplicon.name] = reads_file_full_path
+
+    return manifest
+
 
 def run_assembly_pipeline(
     ref_fasta,
     amplicons_json,
     outdir,
     sorted_bam=None,
+    reads_per_amp_dir=None,
     reads_fastaq=None,
     mates_fastaq=None,
     minimap_opts=None,
@@ -163,9 +201,18 @@ def run_assembly_pipeline(
     amplicons = amps.load_amplicons_json_file(amplicons_json)
     json_data["run_summary"]["total_amplicons"] = len(amplicons)
     logging.info(f"Loaded amplicons file {amplicons_json}")
+    amplicon_to_reads_file = None
 
-    if sorted_bam is None:
-        assert reads_fastaq is not None
+    if reads_per_amp_dir is not None:
+        assert reads_fastaq is None
+        assert sorted_bam is None
+        amplicon_to_reads_file = load_and_check_reads_amp_dir(
+            reads_per_amp_dir, amplicons
+        )
+        bam = None
+    elif reads_fastaq is not None:
+        assert sorted_bam is None
+        assert reads_per_amp_dir is None
         logging.info("Reads in FASTA/FASTQ format provided. Mapping reads")
         sorted_bam = os.path.join(outdir, "map_reads.bam")
         map_reads(
@@ -176,10 +223,11 @@ def run_assembly_pipeline(
             mates_file=mates_fastaq,
         )
         logging.info("Finished mapping reads")
+        bam = pysam.AlignmentFile(sorted_bam, "rb")
     else:
-        assert reads_fastaq is None
+        assert sorted_bam is not None
+        bam = pysam.AlignmentFile(sorted_bam, "rb")
 
-    bam = pysam.AlignmentFile(sorted_bam, "rb")
     if debug:
         polish_root_dir = os.path.join(outdir, "Amplicon_polish")
         os.mkdir(polish_root_dir)
@@ -191,8 +239,9 @@ def run_assembly_pipeline(
         polish_each_amplicon(
             ref_genome,
             amplicons,
-            bam,
             polish_root_dir,
+            bam_to_slice_reads=bam,
+            amplicon_to_reads_file=amplicon_to_reads_file,
             min_mean_coverage=min_mean_coverage,
             target_coverage=target_coverage,
             read_end_trim=read_end_trim,

@@ -187,8 +187,9 @@ class Amplicon:
     def polish(
         self,
         ref_genome,
-        bam,
         outdir,
+        bam_to_slice_reads=None,
+        reads_file=None,
         min_mean_coverage=25,
         target_coverage=500,
         read_end_trim=20,
@@ -202,27 +203,36 @@ class Amplicon:
         minimap_opts=None,
     ):
         os.mkdir(outdir)
-        reads_file = os.path.join(outdir, "reads.fa")
-        total_reads, used_reads, coverage = self.get_reads_for_polishing(
-            ref_genome.id,
-            bam,
-            reads_file,
-            min_coverage=min_mean_coverage,
-            trim_ends=read_end_trim,
-            tolerance=read_map_tolerance,
-            min_output_length=min_read_length,
-            target_depth=target_coverage,
-            wgs=wgs,
-        )
-        logging.debug(
-            f"Extracted {total_reads} reads for amplicon {self.name}. Using {used_reads} for polishing, at mean depth of {coverage}"
-        )
-        if coverage < min_mean_coverage:
-            logging.warning(
-                f"Mean coverage for amplicon {self.name} is too low: {coverage}. Considering this a failed amplicon"
+        if reads_file is None:
+            reads_file = os.path.join(outdir, "reads.fa")
+            total_reads, used_reads, coverage = self.get_reads_for_polishing(
+                ref_genome.id,
+                bam_to_slice_reads,
+                reads_file,
+                min_coverage=min_mean_coverage,
+                trim_ends=read_end_trim,
+                tolerance=read_map_tolerance,
+                min_output_length=min_read_length,
+                target_depth=target_coverage,
+                wgs=wgs,
             )
-            self.polish_data["Comments"].append(f"Coverage {coverage} too low")
-            return
+            logging.debug(
+                f"Extracted {total_reads} reads for amplicon {self.name}. Using {used_reads} for polishing, at mean depth of {coverage}"
+            )
+            if coverage < min_mean_coverage:
+                logging.warning(
+                    f"Mean coverage for amplicon {self.name} is too low: {coverage}. Considering this a failed amplicon"
+                )
+                self.polish_data["Comments"].append(f"Coverage {coverage} too low")
+                return
+        else:
+            logging.debug(
+                "Using user-supplied reads {reads_file} for amplicon {self.name}"
+            )
+            self.polish_data["Comments"].append(
+                f"Read stats not calculated because user supplied file {reads_file}"
+            )
+
         amplicon_seq = ref_genome[self.start : self.end + 1]
         racon_dir = os.path.join(outdir, "Racon")
         self.polished_seq = racon.run_racon_iterations(
@@ -295,13 +305,16 @@ def load_amplicons_json_file(infile):
     with open(infile) as f:
         data = json.load(f)
     if "amplicons" not in data:
-        raise Exception(f"No 'amplicons' entry found in JSON file {infile}. Cannot continue")
+        raise Exception(
+            f"No 'amplicons' entry found in JSON file {infile}. Cannot continue"
+        )
     amplicons = []
     for name, d in data["amplicons"].items():
         left_primer_len = d["left_primer_end"] - d["start"] + 1
         right_primer_len = d["end"] - d["right_primer_start"] + 1
         amplicons.append(
-            Amplicon(name, d["start"], d["end"], left_primer_len, right_primer_len))
+            Amplicon(name, d["start"], d["end"], left_primer_len, right_primer_len)
+        )
     amplicons.sort(key=attrgetter("start"))
     return amplicons
 
