@@ -47,7 +47,7 @@ def main(args=None):
         help="Reference-guided assembly from reads",
         usage="viridian assemble [options] <tech> <ref_fasta> <amplicons_json> <outdir>",
         description="Reference-guided assembly from reads",
-        epilog="Required: --bam, or --reads_to_map, or both --reads_to_map and --mates_to_map",
+        epilog="Required: --reads_per_amp_dir, or --bam, or --reads_to_map, or both --reads_to_map and --mates_to_map",
     )
     subparser_assemble.add_argument(
         "tech",
@@ -65,7 +65,7 @@ def main(args=None):
     subparser_assemble.add_argument("outdir", help="Output directory")
 
     reads_group = subparser_assemble.add_argument_group(
-        "Reads options. Must use: --bam; or --reads_to_map; or --reads_to_map and --mates_to_map"
+        "Reads options. Must use: --reads_per_amp_dir; or --bam; or --reads_to_map; or --reads_to_map and --mates_to_map"
     )
     reads_group.add_argument(
         "--bam",
@@ -81,6 +81,11 @@ def main(args=None):
         "--mates_to_map",
         help="Input mate reads to be mapped, in FASTA or FASTQ format. If you have paired reads, use this for second file of reads",
         metavar="FILENAME",
+    )
+    reads_group.add_argument(
+        "--reads_per_amp_dir",
+        help="Directory of reads, one reads file per amplicon (this option is for viridian_workflow)",
+        metavar="DIRNAME",
     )
     subparser_assemble.add_argument(
         "--minimap_opts",
@@ -164,7 +169,6 @@ def main(args=None):
         help="Overwrite output directory if it already exists",
     )
     subparser_assemble.set_defaults(func=viridian.tasks.assemble.run)
-
 
     args = parser.parse_args()
     set_tech_dependent_args(args)
