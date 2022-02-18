@@ -44,7 +44,9 @@ def amplicons_to_consensus_contigs(amplicons, min_match_length=20):
         return None
 
     for i in range(0, len(amplicons)):
-        logging.debug(f"Overlapping amplicons. Processing {amplicons[i].name}. Assemble succes: {amplicons[i].assemble_success}")
+        logging.debug(
+            f"Overlapping amplicons. Processing {amplicons[i].name}. Assemble succes: {amplicons[i].assemble_success}"
+        )
         if amplicons[i].assemble_success:
             if i == 0 or overlaps[i - 1] is None:
                 start = amplicons[i].left_primer_length
@@ -72,11 +74,11 @@ def amplicons_to_consensus_contigs(amplicons, min_match_length=20):
 
 def _make_split_contigs_fasta(contigs, outfile):
     with open(outfile, "w") as f:
-        for i, contig in enumerate(contigs):
-            print(f">{i}.left", file=f)
-            print(contig[: int(len(contig) / 2)], file=f)
-            print(f">{i}.right", file=f)
-            print(contig[int(len(contig) / 2) :], file=f)
+        for d in contigs:
+            print(f">{d['name']}.left", file=f)
+            print(d["seq"][: int(len(d["seq"]) / 2)], file=f)
+            print(f">{d['name']}.right", file=f)
+            print(d["seq"][int(len(d["seq"]) / 2) :], file=f)
 
 
 def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20):
@@ -93,14 +95,13 @@ def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20):
         if fields[4] != "+":
             continue
 
-        index, left_or_right = fields[0].split(".")
+        name, left_or_right = fields[0].split(".")
         if (left_or_right == "left" and int(fields[2]) > end_allowance) or (
             left_or_right == "right" and int(fields[3]) + end_allowance < int(fields[3])
         ):
             continue
 
-        index = int(index)
-        key = (index, left_or_right)
+        key = (name, left_or_right)
 
         if key not in mappings:
             mappings[key] = fields
@@ -116,20 +117,21 @@ def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20):
 
 
 def _check_mappings(contigs, mappings):
+    bad_contig_indexes = set()
     for i, contig in enumerate(contigs):
-        left_key = (i, "left")
-        right_key = (i, "right")
+        left_key = (contig["name"], "left")
+        right_key = (contig["name"], "right")
         if left_key not in mappings:
             logging.warning(
-                f"Error mapping left half of contig to reference genome: {contig}"
+                f"Error mapping left half of contig to reference genome. Contig excluded from consensus: {contig['seq']}"
             )
-            return False
+            bad_contig_indexes.add(i)
         elif right_key not in mappings:
             logging.warning(
-                f"Error mapping right half of contig to reference genome: {contig}"
+                f"Error mapping right half of contig to reference genome. Contig excluded from consensus: {contig['seq']}"
             )
-            return False
-    return True
+            bad_contig_indexes.add(i)
+    return bad_contig_indexes
 
 
 def consensus_contigs_to_consensus(
@@ -140,11 +142,17 @@ def consensus_contigs_to_consensus(
         return None
 
     fa_to_map = f"{outprefix}.to_map.fa"
+    contigs = [{"name": str(i), "seq": seq} for i, seq in enumerate(contigs)]
     _make_split_contigs_fasta(contigs, fa_to_map)
     mappings = _map_split_contigs(fa_to_map, ref_fasta, end_allowance=map_end_allowance)
     if not debug:
         os.unlink(fa_to_map)
-    if not _check_mappings(contigs, mappings):
+    bad_contig_indexes = _check_mappings(contigs, mappings)
+    if len(bad_contig_indexes) > 0:
+        contigs = [
+            contigs[i] for i in range(len(contigs)) if i not in bad_contig_indexes
+        ]
+    if len(contigs) == 0:
         logging.warning(
             "Errors aligning contigs to reference to make final sequence. Aborting assembly"
         )
@@ -153,18 +161,18 @@ def consensus_contigs_to_consensus(
     consensus = []
 
     for i, contig in enumerate(contigs):
-        right_fields = mappings[(i, "right")]
+        right_fields = mappings[(contig["name"], "right")]
 
-        consensus.append(contig)
+        consensus.append(contig["seq"])
         if i < len(contigs) - 1:
-            next_left_fields = mappings[(i + 1, "left")]
+            next_left_fields = mappings[(contigs[i + 1]["name"], "left")]
             contig_end_in_ref = int(right_fields[8])
             next_contig_start_in_ref = int(next_left_fields[7])
             if contig_end_in_ref < next_contig_start_in_ref:
                 consensus.append("N" * (next_contig_start_in_ref - contig_end_in_ref))
             else:
                 logging.warning(
-                    f"Errors aligning contigs to reference to make final sequence. Order of contigs vs reference not as epxected. Cannot get gap between contigs: {contig[i]} and {contig[i+1]}. Aborting assembly"
+                    f"Errors aligning contigs to reference to make final sequence. Order of contigs vs reference not as epxected. Cannot get gap between contigs: {contig['seq']} and {contigs[i+1]['seq']}. Aborting assembly"
                 )
                 return None
 

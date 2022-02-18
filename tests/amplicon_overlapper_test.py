@@ -80,6 +80,7 @@ def test_amplicons_to_consensus_contigs():
     expect = [amplicons[2].masked_seq[5:-6].strip("N")]
     assert got_contigs == expect
 
+
 def test_amplicons_to_consensus_contigs_2():
     # This hits case not seen in previous test. Need a combination of amplicons
     # that pass fail pass fail pass. Was a bug where new contig was not being
@@ -112,6 +113,7 @@ def test_amplicons_to_consensus_contigs_2():
     amplicons[5].assemble_success = True
     got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 7)
     assert got_contigs == [ref[1:48], ref[82:127]]
+
 
 def test_consensus_contigs_to_consensus():
     ref_fasta = os.path.join(data_dir, "consensus_contigs_to_consensus.fa")
@@ -149,6 +151,15 @@ def test_consensus_contigs_to_consensus():
         contigs, ref_fasta, outprefix
     )
     assert got is None
+    utils.rm_rf(f"{outprefix}.*")
+
+    # Add one short contig that should get removed because won't map well
+    # enough to the ref
+    contigs = [contig1, contig2[:40]]
+    got = amplicon_overlapper.consensus_contigs_to_consensus(
+        contigs, ref_fasta, outprefix
+    )
+    assert got == contig1
     utils.rm_rf(f"{outprefix}.*")
 
 
