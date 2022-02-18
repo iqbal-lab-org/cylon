@@ -15,6 +15,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Added command line option `--reads_per_amp_dir`
 
+- When building consensus from contigs, if a contig does not map then remove
+  the contig and carry on, instead of aborting the entire assembly
+
 ### Removed
 
 - Removed the command line function `viridian amplicon_overlap`.
