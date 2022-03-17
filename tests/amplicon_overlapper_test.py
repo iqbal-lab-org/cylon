@@ -43,32 +43,32 @@ def test_amplicons_to_consensus_contigs():
     amplicons[0].masked_seq = "CCCCGTAACCGAGCTCACCAGCGAATCACAA"
     amplicons[0].assemble_success = True
     got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 10)
-    assert got_contigs == [amplicons[0].masked_seq[1:-2]]
+    assert got_contigs == [amplicons[0].masked_seq[0:-2]]
 
     amplicons[1].masked_seq = "TCACCAGCGAATCACAAGTGTTAAGAGACAAAGAAGCGGCAGAACACTTTGG"
     amplicons[1].assemble_success = True
     got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 10)
-    expect = ["CCCGTAACCGAGCTCACCAGCGAATCACAAGTGTTAAGAGACAAAGAAGCGGCAGAACACT"]
+    expect = ["CCCCGTAACCGAGCTCACCAGCGAATCACAAGTGTTAAGAGACAAAGAAGCGGCAGAACACT"]
     assert got_contigs == expect
 
     amplicons[2].masked_seq = "NNCAGAACACTTTGGCTCCTATGCACAGCGCGGACCAANN"
     amplicons[2].assemble_success = True
     got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 10)
     expect = [
-        "CCCGTAACCGAGCTCACCAGCGAATCACAAGTGTTAAGAGACAAAGAAGCGGCAGAACACTTTGGCTCCTATGCACAGCGCGGA"
+        "CCCCGTAACCGAGCTCACCAGCGAATCACAAGTGTTAAGAGACAAAGAAGCGGCAGAACACTTTGGCTCCTATGCACAGCGCGGACCAA"
     ]
     assert got_contigs == expect
 
     amplicons[1].masked_seq = None
     amplicons[1].assemble_success = False
     got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 10)
-    expect = [amplicons[0].masked_seq[1:-2], amplicons[2].masked_seq[5:-6]]
+    expect = [amplicons[0].masked_seq[0:-2], amplicons[2].masked_seq[5:].rstrip("N")]
     assert got_contigs == expect
 
     amplicons[0].masked_seq = None
     amplicons[0].assemble_success = False
     got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 10)
-    expect = [amplicons[2].masked_seq[5:-6]]
+    expect = [amplicons[2].masked_seq[5:].rstrip("N")]
     assert got_contigs == expect
 
     amplicons[0].masked_seq = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -77,7 +77,7 @@ def test_amplicons_to_consensus_contigs():
     amplicons[0].assemble_success = False
     amplicons[1].assemble_success = False
     got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 10)
-    expect = [amplicons[2].masked_seq[5:-6].strip("N")]
+    expect = [amplicons[2].masked_seq[5:].strip("N")]
     assert got_contigs == expect
 
 
@@ -112,7 +112,7 @@ def test_amplicons_to_consensus_contigs_2():
     amplicons[5].masked_seq = ref[100:130]
     amplicons[5].assemble_success = True
     got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, 7)
-    assert got_contigs == [ref[1:48], ref[82:127]]
+    assert got_contigs == [ref[0:48], ref[82:129]]
 
 
 def test_consensus_contigs_to_consensus():
@@ -185,7 +185,7 @@ def test_assemble_amplicons():
     got = amplicon_overlapper.assemble_amplicons(
         amplicons, ref_fasta, outprefix, debug=True
     )
-    assert got == amplicons[0].masked_seq[1:-2]
+    assert got == amplicons[0].masked_seq[0:-2]
     utils.rm_rf(f"{outprefix}.*")
 
     amplicons[1].masked_seq = ref_seq[250:545]
@@ -193,7 +193,7 @@ def test_assemble_amplicons():
     got = amplicon_overlapper.assemble_amplicons(
         amplicons, ref_fasta, outprefix, debug=True
     )
-    assert got == ref_seq[21:541]
+    assert got == ref_seq[20:541]
     utils.rm_rf(f"{outprefix}.*")
 
     amplicons[3].masked_seq = ref_seq[790:952]
@@ -201,7 +201,7 @@ def test_assemble_amplicons():
     got = amplicon_overlapper.assemble_amplicons(
         amplicons, ref_fasta, outprefix, debug=True
     )
-    assert got == ref_seq[21:541] + "N" * 256 + ref_seq[797:944]
+    assert got == ref_seq[20:541] + "N" * 256 + ref_seq[797:951]
     utils.rm_rf(f"{outprefix}.*")
 
     # putting in junk for amplicon 2 means it won't overlap amplicons 1 or 3,
@@ -213,5 +213,5 @@ def test_assemble_amplicons():
     got = amplicon_overlapper.assemble_amplicons(
         amplicons, ref_fasta, outprefix, debug=True
     )
-    assert got == ref_seq[21:299]
+    assert got == ref_seq[20:299]
     utils.rm_rf(f"{outprefix}.*")
