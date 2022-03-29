@@ -48,12 +48,16 @@ def amplicons_to_consensus_contigs(amplicons, min_match_length=20):
             f"Overlapping amplicons. Processing {amplicons[i].name}. Assemble succes: {amplicons[i].assemble_success}"
         )
         if amplicons[i].assemble_success:
-            if i == 0 or overlaps[i - 1] is None:
+            if i == 0:
+                start = 0
+            elif overlaps[i - 1] is None:
                 start = amplicons[i].left_primer_length
             else:
                 start = max(overlaps[i - 1].b, 0)
 
-            if i > len(overlaps) - 1 or overlaps[i] is None:
+            if i > len(overlaps) - 1:
+                end = len(amplicons[i].masked_seq) - 1
+            elif overlaps[i] is None:
                 end = len(amplicons[i].masked_seq) - amplicons[i].right_primer_length
             else:
                 end = overlaps[i].a

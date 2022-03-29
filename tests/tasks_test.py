@@ -40,7 +40,7 @@ def test_assemble():
     expect_seq = utils.load_single_seq_fasta(expect_fa)
     # expected fasta is the fasta used to generate the reads. But the amplicons
     # don't cover the whole genome, so we expect to miss the ends
-    assert got == expect_seq[11:979]
+    assert got == expect_seq[11:988]
     consensus_from_file = utils.load_single_seq_fasta(
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
@@ -55,7 +55,7 @@ def test_assemble():
     got = tasks.assemble.run(options)
     expect_fa = os.path.join(data_dir, "run_assembly_pipeline.expect.fa")
     expect_seq = utils.load_single_seq_fasta(expect_fa)
-    assert got == expect_seq[356:979]
+    assert got == expect_seq[356:988]
     consensus_from_file = utils.load_single_seq_fasta(
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
