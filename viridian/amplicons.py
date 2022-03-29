@@ -204,6 +204,10 @@ class Amplicon:
     ):
         os.mkdir(outdir)
         if reads_file is None:
+            if bam_to_slice_reads is None:
+                self.polish_data["Comments"].append(f"No reads provided. Calling this amplicon failed")
+                return
+
             reads_file = os.path.join(outdir, "reads.fa")
             total_reads, used_reads, coverage = self.get_reads_for_polishing(
                 ref_genome.id,
