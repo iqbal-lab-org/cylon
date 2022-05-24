@@ -2,7 +2,7 @@ import os
 import pytest
 from unittest import mock
 
-from viridian import utils, tasks
+from cylon import utils, tasks
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 data_root = os.path.join(this_dir, "data")

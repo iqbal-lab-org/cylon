@@ -2,7 +2,7 @@
 
 import argparse
 import logging
-import viridian
+import cylon
 
 
 TECH_DEPENDENT_DEFAULTS = {
@@ -27,12 +27,12 @@ def set_tech_dependent_args(args):
 
 def main(args=None):
     parser = argparse.ArgumentParser(
-        prog="viridian",
-        usage="viridian <command> <options>",
-        description="viridian: virus amplicon assembler",
+        prog="cylon",
+        usage="cylon <command> <options>",
+        description="cylon: virus amplicon assembler",
     )
 
-    parser.add_argument("--version", action="version", version=viridian.__version__)
+    parser.add_argument("--version", action="version", version=cylon.__version__)
     parser.add_argument(
         "--debug",
         help="More verbose logging, and less file cleaning",
@@ -45,7 +45,7 @@ def main(args=None):
     subparser_assemble = subparsers.add_parser(
         "assemble",
         help="Reference-guided assembly from reads",
-        usage="viridian assemble [options] <tech> <ref_fasta> <amplicons_json> <outdir>",
+        usage="cylon assemble [options] <tech> <ref_fasta> <amplicons_json> <outdir>",
         description="Reference-guided assembly from reads",
         epilog="Required: --reads_per_amp_dir, or --bam, or --reads_to_map, or both --reads_to_map and --mates_to_map",
     )
@@ -168,13 +168,13 @@ def main(args=None):
         action="store_true",
         help="Overwrite output directory if it already exists",
     )
-    subparser_assemble.set_defaults(func=viridian.tasks.assemble.run)
+    subparser_assemble.set_defaults(func=cylon.tasks.assemble.run)
 
     args = parser.parse_args()
     set_tech_dependent_args(args)
 
     logging.basicConfig(
-        format="[%(asctime)s viridian %(levelname)s] %(message)s",
+        format="[%(asctime)s cylon %(levelname)s] %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S",
     )
     log = logging.getLogger()

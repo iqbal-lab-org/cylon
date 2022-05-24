@@ -2,8 +2,8 @@ import collections
 import os
 import pytest
 
-from viridian import amplicon_overlapper, utils
-from viridian import amplicons as amps
+from cylon import amplicon_overlapper, utils
+from cylon import amplicons as amps
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(this_dir, "data", "amplicon_overlapper")

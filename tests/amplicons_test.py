@@ -5,7 +5,7 @@ import pysam
 import pytest
 from unittest import mock
 
-from viridian import amplicons, utils
+from cylon import amplicons, utils
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(this_dir, "data", "amplicons")

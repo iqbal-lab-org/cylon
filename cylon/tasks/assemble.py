@@ -1,4 +1,4 @@
-from viridian import assemble, utils
+from cylon import assemble, utils
 
 
 def run(options):

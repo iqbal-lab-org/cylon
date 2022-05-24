@@ -1,7 +1,7 @@
-![Build Status](https://github.com/iqbal-lab-org/viridian/actions/workflows/build.yaml/badge.svg)
+![Build Status](https://github.com/iqbal-lab-org/cylon/actions/workflows/build.yaml/badge.svg)
 
-# viridian
-Virus assembler from amplicon sequencing reads
+# cylon
+Virus assembly module used by viridian
 
 # Important
 We recommend that you use
@@ -27,9 +27,9 @@ python3 -m pip install .
 ### Singularity container
 Clone this repository and run:
 ```
-sudo singularity build viridian.img Singularity.def
+sudo singularity build cylon.img Singularity.def
 ```
-to build the container `viridian.img`.
+to build the container `cylon.img`.
 
 
 ## Example usage
@@ -68,17 +68,17 @@ for each amplicon, but will simply be ignored).
 
 Run using a mapped BAM file of ONT reads:
 ```
-viridian assemble --bam reads.bam ont ref.fasta amplicons.json outdir
+cylon assemble --bam reads.bam ont ref.fasta amplicons.json outdir
 ```
 
 Run using a FASTQ file of ONT reads:
 ```
-viridian assemble --reads_to_map reads.fastq ont ref.fasta amplicons.json outdir
+cylon assemble --reads_to_map reads.fastq ont ref.fasta amplicons.json outdir
 ```
 
 Run using two FASTQ files of paired Illumina reads:
 ```
-viridian assemble \
+cylon assemble \
   --reads_to_map reads1.fastq --mates_to_map reads2.fastq \
   illumina ref.fasta amplicons.json outdir
 ```

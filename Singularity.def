@@ -9,8 +9,8 @@ export LANG=C.UTF-8
 
 
 %setup
-    mkdir $SINGULARITY_ROOTFS/viridian
-    rsync -a .ci/install_dependencies.sh MANIFEST.in viridian LICENSE tox.ini requirements.txt setup.py tests $SINGULARITY_ROOTFS/viridian/
+    mkdir $SINGULARITY_ROOTFS/cylon
+    rsync -a .ci/install_dependencies.sh MANIFEST.in cylon LICENSE tox.ini requirements.txt setup.py tests $SINGULARITY_ROOTFS/cylon/
 
 
 %post
@@ -18,8 +18,8 @@ export LANG=C.UTF-8
     export PATH=/bioinf-tools/:$PATH
     export LANG=C.UTF-8
 
-    /viridian/install_dependencies.sh /bioinf-tools
-    cd /viridian
+    /cylon/install_dependencies.sh /bioinf-tools
+    cd /cylon
     tox
     # Getting pysam issue, complaining cython not found. So install it first.
     pip3 install cython
@@ -27,4 +27,4 @@ export LANG=C.UTF-8
 
 
 %runscript
-    viridian "$@"
+    cylon "$@"

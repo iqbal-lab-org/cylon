@@ -7,7 +7,7 @@ import random
 
 import pyfastaq
 
-from viridian import racon, utils
+from cylon import racon, utils
 
 
 class Amplicon:

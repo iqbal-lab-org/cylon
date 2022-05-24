@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from viridian import racon, utils
+from cylon import racon, utils
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(this_dir, "data", "racon")
