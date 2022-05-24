@@ -7,7 +7,7 @@ import random
 import subprocess
 import pyfastaq
 
-from viridian import amplicons as amps
+from cylon import amplicons as amps
 
 Amplicon = namedtuple("Amplicon", ("name", "start", "end"))
 random.seed(42)

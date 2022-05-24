@@ -3,6 +3,7 @@ set -vexu
 
 install_root=$1
 
+apt-get update
 apt-get install -y software-properties-common
 apt-add-repository universe
 apt-get update
@@ -29,12 +30,20 @@ cd $install_root
 
 #________________________ minimap2 __________________________#
 cd $install_root
-git clone https://github.com/lh3/minimap2.git minimap2_git
-cd minimap2_git
-git checkout 4dfd495cc2816f67556bc6318654e572636ee40a
-make
+MINIMAP2_V=2.24
+wget https://github.com/lh3/minimap2/releases/download/v${MINIMAP2_V}/minimap2-${MINIMAP2_V}.tar.bz2
+tar xf minimap2-${MINIMAP2_V}.tar.bz2
+rm minimap2-${MINIMAP2_V}.tar.bz2
+cd minimap2-${MINIMAP2_V}
+arch_is_arm=$(dpkg --print-architecture | grep '^arm' | wc -l)
+if [[ $arch_is_arm -gt 0 ]]
+then
+    make arm_neon=1 aarch64=1
+else
+    make
+fi
 cd ..
-cp -s minimap2_git/minimap2 .
+cp -s minimap2-${MINIMAP2_V}/minimap2 .
 
 #________________________ racon _____________________________#
 git clone --recursive https://github.com/lbcb-sci/racon.git racon-git

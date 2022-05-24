@@ -9,9 +9,9 @@ import tempfile
 
 import pysam
 
-from viridian import amplicon_overlapper, utils
-from viridian import amplicons as amps
-from viridian import __version__ as viridian_version
+from cylon import amplicon_overlapper, utils
+from cylon import amplicons as amps
+from cylon import __version__ as cylon_version
 
 
 def map_reads(
@@ -183,7 +183,7 @@ def run_assembly_pipeline(
             "command": " ".join(sys.argv),
             "options": options_dict,
             "cwd": os.getcwd(),
-            "version": viridian_version,
+            "version": cylon_version,
             "finished_running": False,
             "made_consensus": False,
             "consensus": None,
@@ -232,7 +232,7 @@ def run_assembly_pipeline(
         polish_root_dir = os.path.join(outdir, "Amplicon_polish")
         os.mkdir(polish_root_dir)
     else:
-        polish_root_dir = tempfile.mkdtemp(prefix="viridian_polish_")
+        polish_root_dir = tempfile.mkdtemp(prefix="cylon_polish_")
 
     logging.info(f"Start polishing each amplicon. Directory: {polish_root_dir}")
     try:

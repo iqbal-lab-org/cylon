@@ -6,16 +6,16 @@ with open("requirements.txt") as f:
     install_requires = [x.rstrip() for x in f]
 
 setup(
-    name="viridian",
+    name="cylon",
     version="0.1.0",
     description="Virus assembler from amplicon sequencing reads",
     packages=find_packages(exclude=["tests"]),
     author="Martin Hunt",
     author_email="mhunt@ebi.ac.uk",
-    url="https://github.com/iqbal-lab-org/viridian",
+    url="https://github.com/iqbal-lab-org/cylon",
     test_suite="nose.collector",
     tests_require=["pytest"],
-    entry_points={"console_scripts": ["viridian = viridian.__main__:main"]},
+    entry_points={"console_scripts": ["cylon = cylon.__main__:main"]},
     install_requires=install_requires,
     license="MIT",
     classifiers=[

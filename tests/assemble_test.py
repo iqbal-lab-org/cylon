@@ -3,7 +3,7 @@ import os
 import pytest
 from unittest import mock
 
-from viridian import assemble, utils
+from cylon import assemble, utils
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(this_dir, "data", "assemble")

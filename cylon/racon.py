@@ -3,7 +3,7 @@ import os
 
 import pyfastaq
 
-from viridian import utils
+from cylon import utils
 
 
 def run_racon(seq_to_polish, reads_filename, outprefix, minimap_opts="-t 1 -x map-ont", debug=False):

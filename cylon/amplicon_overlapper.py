@@ -2,7 +2,7 @@ import logging
 import os
 
 import pyfastaq
-from viridian import utils
+from cylon import utils
 
 
 def get_amplicon_overlaps(amplicons, min_match_length):
