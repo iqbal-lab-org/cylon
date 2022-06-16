@@ -17,6 +17,7 @@ apt-get install -y \
   git \
   python3 \
   python3-pip \
+  python3-pysam \
   python3-setuptools \
   wget \
   zlib1g-dev
