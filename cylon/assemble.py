@@ -117,25 +117,22 @@ def load_and_check_reads_amp_dir(reads_per_amp_dir, amplicons):
     with open(json_file) as f:
         manifest = json.load(f)
 
-    if len(manifest) != len(amplicons):
+    if len(amplicons) < len(manifest):
         raise Exception(
-            f"Expected {len(amplicons)} amplicons in {json_file} but got {len(manifest)}"
+            f"Amplicon scheme has {len(amplicons)} amplicons, which is less than number of reads files in {json_file}"
         )
+    all_amp_names = set([x.name for x in amplicons])
 
-    for amplicon in amplicons:
-        if amplicon.name not in manifest:
-            raise Exception(
-                f"Amplicon '{amplicon.name}' not found in JSON file {json_file}"
-            )
-        reads_file = manifest[amplicon.name]
-        if reads_file is None:
-            continue
-        reads_file_full_path = os.path.join(reads_per_amp_dir, reads_file)
+    for amplicon_name in manifest:
+        if amplicon_name not in all_amp_names:
+            raise Exception(f"Amplicon '{amplicon_name}' in json {json_file} but not in amplicon scheme")
+
+        reads_file_full_path = os.path.join(reads_per_amp_dir, manifest[amplicon_name])
         if not os.path.exists(reads_file_full_path):
             raise Exception(
-                f"Reads file for amplicon {amplicon.name} not found: {reads_file_full_path}"
+                f"Reads file for amplicon '{amplicon_name}' not found: {reads_file_full_path}"
             )
-        manifest[amplicon.name] = reads_file_full_path
+        manifest[amplicon_name] = reads_file_full_path
 
     return manifest
 

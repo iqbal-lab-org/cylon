@@ -34,9 +34,6 @@ def test_load_and_check_reads_amp_dir():
     with pytest.raises(Exception):
         assemble.load_and_check_reads_amp_dir(tmp_dir, [amp1])
 
-    with pytest.raises(Exception):
-        assemble.load_and_check_reads_amp_dir(tmp_dir, [amp1, amp2])
-
     for filename in json_data.values():
         with open(os.path.join(tmp_dir, filename), "w"):
             pass
@@ -44,8 +41,9 @@ def test_load_and_check_reads_amp_dir():
     got = assemble.load_and_check_reads_amp_dir(tmp_dir, [amp1, amp2])
     assert got == {k: os.path.join(tmp_dir, v) for k, v in json_data.items()}
 
+    amp2.name = "wrong_name"
     with pytest.raises(Exception):
-        assemble.load_and_check_reads_amp_dir(tmp_dir, [amp1, amp2, amp3])
+        assemble.load_and_check_reads_amp_dir(tmp_dir, [amp1, amp2])
 
     utils.rm_rf(tmp_dir)
 
