@@ -36,6 +36,9 @@ class Amplicon:
     def __eq__(self, other):
         return type(other) is type(self) and self.__dict__ == other.__dict__
 
+    def non_primer_length(self):
+        return len(self) - self.left_primer_length - self.right_primer_length
+
     def to_dict(self):
         return {
             "name": self.name,
@@ -271,6 +274,10 @@ class Amplicon:
             percent_N = 100 * proportion_masked
             self.polish_data["Comments"].append(
                 f"Too many Ns ({percent_N}%) after masking polished sequence (not including Ns at the start/end)"
+            )
+        elif len(masked_strip_ns) < 0.75 * self.non_primer_length():
+            self.polish_data["Comments"].append(
+                f"N-stripped sequence is shorter than 75% of (amplicon length - primers lengths)"
             )
         else:
             self.polish_data["Polish success"] = True
