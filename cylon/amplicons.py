@@ -19,6 +19,7 @@ class Amplicon:
         self.right_primer_length = right_primer_length
         self.polished_seq = None
         self.masked_seq = None
+        self.final_seq = None
         self.assemble_success = False
         self.polish_data = {
             "Reads matching": 0,
@@ -48,6 +49,7 @@ class Amplicon:
             "right_primer_length": self.right_primer_length,
             "polished_seq": self.polished_seq,
             "polished_masked_seq": self.masked_seq,
+            "final_seq": self.final_seq,
             "assemble_success": self.assemble_success,
             "polish_data": self.polish_data,
         }
@@ -55,8 +57,16 @@ class Amplicon:
     def clear_seqs_because_overlap_fail(self):
         self.polished_seq = None
         self.masked_seq = None
+        self.final_seq = None
         self.assemble_success = False
         self.polish_data["Comments"].append("No overlap with adjacent amplicon")
+
+    def clear_seqs_because_no_ref_match(self):
+        self.polished_seq = None
+        self.masked_seq = None
+        self.final_seq = None
+        self.assemble_success = False
+        self.polish_data["Comments"].append("No match to reference")
 
     def force_polish_fail(self):
         self.polish_data["Comments"].append("User chose to fail, so no processing run")
@@ -263,21 +273,21 @@ class Amplicon:
             debug=debug,
         )
         logging.debug(f"masked: {self.masked_seq}")
-        masked_strip_ns = self.masked_seq.strip("N")
-        if len(masked_strip_ns) == 0:
+        self.final_seq = self.masked_seq.strip("N")
+        if len(self.final_seq) == 0:
             proportion_masked = 0
         else:
             proportion_masked = round(
-                masked_strip_ns.count("N") / len(masked_strip_ns), 2
+                self.final_seq.count("N") / len(self.final_seq), 2
             )
         if proportion_masked > max_polished_N_prop:
             percent_N = 100 * proportion_masked
             self.polish_data["Comments"].append(
                 f"Too many Ns ({percent_N}%) after masking polished sequence (not including Ns at the start/end)"
             )
-        elif len(masked_strip_ns) < 0.75 * self.non_primer_length():
+        elif len(self.final_seq) < 30:
             self.polish_data["Comments"].append(
-                f"N-stripped sequence is shorter than 75% of (amplicon length - primers lengths)"
+                f"Final polished masked sequence too short: {len(self.final_seq)}"
             )
         else:
             self.polish_data["Polish success"] = True
@@ -286,8 +296,8 @@ class Amplicon:
         if not debug:
             utils.rm_rf(outdir)
 
-    def masked_overlap(self, other, min_match_length):
-        if self.masked_seq is None or other.masked_seq is None:
+    def final_overlap(self, other, min_match_length):
+        if self.final_seq is None or other.final_seq is None:
             return None
 
         # SequenceMatcher has junk=foo option, which would have been nice
@@ -297,14 +307,15 @@ class Amplicon:
         # as junk and doesn't align anything.
         seq_matcher = SequenceMatcher(
             None,
-            a=self.masked_seq.replace("N", "x"),
-            b=other.masked_seq.replace("N", "y"),
+            a=self.final_seq.replace("N", "x"),
+            b=other.final_seq.replace("N", "y"),
             autojunk=False,
         )
         match = seq_matcher.find_longest_match(
-            0, len(self.masked_seq), 0, len(other.masked_seq)
+            0, len(self.final_seq), 0, len(other.final_seq)
         )
         return match if match.size >= min_match_length else None
+
 
     def expected_overlap_length(self, other):
         if self.end < other.start:

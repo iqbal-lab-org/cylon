@@ -153,7 +153,6 @@ def run_assembly_pipeline(
     min_read_length=200,
     racon_iterations=3,
     min_depth_for_not_N=5,
-    min_amp_overlap_len=20,
     contig_map_end_allowance=20,
     amplicons_to_fail=None,
     wgs=False,
@@ -267,7 +266,6 @@ def run_assembly_pipeline(
             amplicons,
             ref_fasta,
             overlap_out,
-            min_match_length=min_amp_overlap_len,
             ref_map_end_allowance=contig_map_end_allowance,
             debug=debug,
         )

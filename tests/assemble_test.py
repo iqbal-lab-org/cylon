@@ -69,7 +69,7 @@ def test_run_assembly_pipeline():
     expect_seq = utils.load_single_seq_fasta(expect_fa)
     # expected fasta is the fasta used to generate the reads. But the amplicons
     # don't cover the whole genome, so we expect to miss the ends
-    assert got == expect_seq[11:988]
+    assert got == expect_seq[11:989]
     consensus_from_file = utils.load_single_seq_fasta(
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
@@ -89,7 +89,7 @@ def test_run_assembly_pipeline():
         min_depth_for_not_N=1,
         read_end_trim=1,
     )
-    assert got == expect_seq[10:988]
+    assert got == expect_seq[10:989]
     consensus_from_file = utils.load_single_seq_fasta(
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
@@ -113,7 +113,7 @@ def test_run_assembly_pipeline():
     expect_seq = utils.load_single_seq_fasta(expect_fa)
     # This time, we should not have the first amplicon, and the returned
     # sequence should start with the second amplicon
-    assert got == expect_seq[356:988]
+    assert got == expect_seq[351:989]
     consensus_from_file = utils.load_single_seq_fasta(
         os.path.join(outdir, "consensus.final_assembly.fa")
     )
@@ -130,6 +130,6 @@ def test_run_assembly_pipeline():
     }
     assert run_info["run_summary"]["successful_amplicons"] == 2
     assert run_info["run_summary"]["total_amplicons"] == 3
-    assert run_info["run_summary"]["consensus_length"] == 632
+    assert run_info["run_summary"]["consensus_length"] == 638
     assert run_info["run_summary"]["consensus_N_count"] == 0
     utils.rm_rf(outdir)

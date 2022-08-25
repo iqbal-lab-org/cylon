@@ -140,13 +140,6 @@ def main(args=None):
         metavar="INT",
     )
     subparser_assemble.add_argument(
-        "--min_amp_overlap_len",
-        help="Minimum perfect overlap length required when overlapping each polished amplicon [%(default)s]",
-        default=20,
-        type=int,
-        metavar="INT",
-    )
-    subparser_assemble.add_argument(
         "--contig_map_end_allowance",
         help="When mapping contigs ends to the reference to fill in failed amplicons with Ns, allow the mapping to start up to this distance away from the contig end [%(default)s]",
         default=20,
