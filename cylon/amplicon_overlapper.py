@@ -99,24 +99,43 @@ def consensus_contigs_to_consensus(
         return None
 
     consensus = []
+    trim_next = 0
+    bad_overlap_ns = 10
 
     for i, contig in enumerate(contigs):
         right_fields = mappings[(contig["name"], "right")]
+        consensus.append(contig["seq"][trim_next:])
 
-        consensus.append(contig["seq"])
         if i < len(contigs) - 1:
             next_left_fields = mappings[(contigs[i + 1]["name"], "left")]
             contig_end_in_ref = int(right_fields[8])
             next_contig_start_in_ref = int(next_left_fields[7])
-            if contig_end_in_ref < next_contig_start_in_ref:
+            # Usually we don't expect the contigs to overlap. In which case put
+            # Ns between them. But they can sometime overlap. When they do,
+            # look for an overlap between them based on the minimap2 mapping.
+            if contig_end_in_ref < next_contig_start_in_ref: # don't overlap
                 consensus.append("N" * (next_contig_start_in_ref - contig_end_in_ref))
-            else:
-                logging.warning(
-                    f"Errors aligning contigs to reference to make final sequence. Order of contigs vs reference not as epxected. Cannot get gap between contigs: {contig['seq']} and {contigs[i+1]['seq']}. Aborting assembly"
-                )
-                return None
+                trim_next = 0
+            else: # they do overlap
+                overlap_len = contig_end_in_ref - next_contig_start_in_ref
+                end_in_contig = len(contig["seq"]) - (int(right_fields[1]) - int(right_fields[3]))
+                contig_ol_seq = contig["seq"][end_in_contig - overlap_len:end_in_contig]
+                next_start = int(next_left_fields[2])
+                next_ol_seq = contigs[i+1]["seq"][next_start:next_start + overlap_len]
+                if contig_ol_seq == next_ol_seq: # good overlap
+                    consensus[-1] = contig["seq"][trim_next:end_in_contig - overlap_len]
+                    trim_next = 0
+                else: # bad overlap, trim the ends and add Ns between
+                    overlap_len += bad_overlap_ns
+                    consensus[-1] = contig["seq"][trim_next:end_in_contig - overlap_len] + "N" * bad_overlap_ns
+                    trim_next = overlap_len
 
-    return "".join(consensus)
+    consensus = "".join([x for x in consensus if len(x) > 0])
+    if any([x != "N" for x in consensus]):
+        return consensus
+    else:
+        logging.warning("Errors aligning contigs to reference to make final sequence. No consensus made")
+        return None
 
 
 def _get_amplicon_ref_matches(amplicons, ref_fasta, outfile, debug=False):
