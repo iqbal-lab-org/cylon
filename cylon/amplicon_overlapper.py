@@ -156,6 +156,7 @@ def _get_amplicon_ref_matches(amplicons, ref_fasta, outfile, debug=False):
             if i in matches and matches[i]["len"] > new_match["len"]:
                 continue
             matches[i] = new_match
+            amplicons[i].ref_match = new_match
 
     return matches
 

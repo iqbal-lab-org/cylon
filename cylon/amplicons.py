@@ -21,6 +21,7 @@ class Amplicon:
         self.masked_seq = None
         self.final_seq = None
         self.assemble_success = False
+        self.ref_match = None
         self.polish_data = {
             "Reads matching": 0,
             "Reads matching forward strand": 0,
@@ -52,6 +53,7 @@ class Amplicon:
             "final_seq": self.final_seq,
             "assemble_success": self.assemble_success,
             "polish_data": self.polish_data,
+            "ref_match": self.ref_match,
         }
 
     def clear_seqs_because_overlap_fail(self):
