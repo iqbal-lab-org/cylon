@@ -206,7 +206,7 @@ def _get_starts_and_ends(perfect_overlaps, amplicons, ref_matches):
                         fails.add(i)
                     else:
                         starts_ends[i][1] = end
-                        starts_end[i+1][0] = start
+                        starts_ends[i+1][0] = start
                 else:
                     starts_ends[i][1] = perfect_ol.a
                     starts_ends[i+1][0] = max(perfect_ol.b, 0)
