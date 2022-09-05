@@ -220,7 +220,9 @@ class Amplicon:
         os.mkdir(outdir)
         if reads_file is None:
             if bam_to_slice_reads is None:
-                self.polish_data["Comments"].append(f"No reads provided. Calling this amplicon failed")
+                self.polish_data["Comments"].append(
+                    f"No reads provided. Calling this amplicon failed"
+                )
                 return
 
             reads_file = os.path.join(outdir, "reads.fa")
@@ -320,7 +322,6 @@ class Amplicon:
             self_start, len(self.final_seq), 0, other_end
         )
         return match if match.size >= min_match_length else None
-
 
     def expected_overlap_length(self, other):
         if self.end < other.start:

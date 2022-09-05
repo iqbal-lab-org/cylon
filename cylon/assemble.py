@@ -125,7 +125,9 @@ def load_and_check_reads_amp_dir(reads_per_amp_dir, amplicons):
 
     for amplicon_name in manifest:
         if amplicon_name not in all_amp_names:
-            raise Exception(f"Amplicon '{amplicon_name}' in json {json_file} but not in amplicon scheme")
+            raise Exception(
+                f"Amplicon '{amplicon_name}' in json {json_file} but not in amplicon scheme"
+            )
 
         reads_file_full_path = os.path.join(reads_per_amp_dir, manifest[amplicon_name])
         if not os.path.exists(reads_file_full_path):

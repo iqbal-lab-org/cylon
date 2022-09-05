@@ -13,6 +13,7 @@ def test_look_for_required_binaries_in_path():
     got = utils.look_for_required_binaries_in_path()
     assert got == True
 
+
 def test_load_single_seq_fasta():
     expect = pyfastaq.sequences.Fasta("seq", "ACGT")
     infile = os.path.join(data_dir, "load_single_seq_fasta.ok.fa")

@@ -96,8 +96,8 @@ def test_amplicons_to_consensus_contigs_2():
         amps.Amplicon("amp5", 78, 119, 2, 1),
         amps.Amplicon("amp6", 100, 135, 1, 3),
     ]
-    #got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, ref_fa, minimap_out)
-    #assert got_contigs == None
+    # got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, ref_fa, minimap_out)
+    # assert got_contigs == None
     amplicons[0].final_seq = ref[0:34]
     amplicons[0].assemble_success = True
     amplicons[1].final_seq = ref[20:57]
@@ -110,7 +110,9 @@ def test_amplicons_to_consensus_contigs_2():
     amplicons[4].assemble_success = True
     amplicons[5].final_seq = ref[100:135]
     amplicons[5].assemble_success = True
-    got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(amplicons, ref_fa, minimap_out)
+    got_contigs = amplicon_overlapper.amplicons_to_consensus_contigs(
+        amplicons, ref_fa, minimap_out
+    )
     assert got_contigs == [ref[0:57], ref[78:135]]
     os.unlink(ref_fa)
 

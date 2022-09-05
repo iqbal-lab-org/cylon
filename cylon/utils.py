@@ -29,7 +29,9 @@ def syscall(command, allow_fail=False, cwd=None):
         )
         raise Exception("Error in system call. Cannot continue")
 
-    logging.debug(f"Command finished with return code {completed_process.returncode}: {command}")
+    logging.debug(
+        f"Command finished with return code {completed_process.returncode}: {command}"
+    )
     return completed_process
 
 
