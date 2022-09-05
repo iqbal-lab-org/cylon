@@ -54,6 +54,8 @@ def polish_each_amplicon(
         amplicons_to_fail = set()
 
     for i, amplicon in enumerate(amplicons):
+        if i == len(amplicons) - 5:
+            logging.info("Processing the final five")
         logging.debug(
             f"Start processing amplicon {amplicon.name} ({i+1}/{len(amplicons)})"
         )
