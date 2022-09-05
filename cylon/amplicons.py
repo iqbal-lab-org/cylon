@@ -298,9 +298,12 @@ class Amplicon:
         if not debug:
             utils.rm_rf(outdir)
 
-    def final_overlap(self, other, min_match_length):
+    def final_overlap(self, other, min_match_length, self_start=0, other_end=None):
         if self.final_seq is None or other.final_seq is None:
             return None
+
+        if other_end is None:
+            other_end = len(other.final_seq)
 
         # SequenceMatcher has junk=foo option, which would have been nice
         # to use to get it to not align Ns, but I couldn't get it to work and
@@ -314,7 +317,7 @@ class Amplicon:
             autojunk=False,
         )
         match = seq_matcher.find_longest_match(
-            0, len(self.final_seq), 0, len(other.final_seq)
+            self_start, len(self.final_seq), 0, other_end
         )
         return match if match.size >= min_match_length else None
 

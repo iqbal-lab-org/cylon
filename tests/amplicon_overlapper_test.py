@@ -12,21 +12,6 @@ data_dir = os.path.join(this_dir, "data", "amplicon_overlapper")
 Match = collections.namedtuple("Match", ("a", "b", "size"))
 
 
-def test_get_amplicon_overlaps():
-    amplicons = [
-        amps.Amplicon("a1", 10, 100, 1, 1),
-        amps.Amplicon("a2", 10, 100, 1, 1),
-        amps.Amplicon("a3", 110, 142, 1, 1),
-    ]
-    amplicons[1].final_seq = "AAAAAAAAAAAAAAAAAATGCTGAACAGTCCCCCCC"
-    amplicons[2].final_seq = "CCTGCTGAACGGTTGATGCATCTCATGCTGACNNAGGTGTGGCCAAAAA"
-
-    expect_overlaps = [None, Match(18, 2, 8)]
-    got_overlaps = amplicon_overlapper.get_amplicon_overlaps(amplicons, min_match_length=8)
-    assert got_overlaps == expect_overlaps
-    assert amplicon_overlapper.get_amplicon_overlaps(amplicons, min_match_length=9) == [None, None]
-
-
 def test_amplicons_to_consensus_contigs():
     f = amplicon_overlapper.amplicons_to_consensus_contigs
     # ref is 100bp of random sequence

@@ -227,6 +227,13 @@ def test_final_overlap():
     assert amp1.final_overlap(amp2, 0) == Match(2, 0, 1)
     assert amp1.final_overlap(amp2, 2) == None
 
+    amp1.final_seq = "NNNGGTGTGGCCTTTTTTTACTGATGCATGATTTTT"
+    amp2.final_seq = "TTTTTTGTGACGAAATTTTTTTTTTT"
+    assert amp1.final_overlap(amp2, 0) == Match(12, 15, 7)
+    assert amp1.final_overlap(amp2, 0, self_start=20) == Match(30, 14, 6)
+    assert amp1.final_overlap(amp2, 0, self_start=20, other_end=10) == Match(31, 0, 5)
+    assert amp1.final_overlap(amp2, 0, other_end=10) == Match(12, 0, 6)
+
 
 def test_load_amplicons_json_file():
     expect = [
