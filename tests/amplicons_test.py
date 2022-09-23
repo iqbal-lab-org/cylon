@@ -202,30 +202,37 @@ def test_polish():
     utils.rm_rf(outdir)
 
 
-def test_masked_overlap():
+def test_final_overlap():
     Match = collections.namedtuple("Match", ("a", "b", "size"))
     amp1 = amplicons.Amplicon("a1", 50, 100, 1, 1)
     amp2 = amplicons.Amplicon("a2", 90, 150, 1, 1)
-    assert amp1.masked_overlap(amp2, 10) is None
-    amp2.masked_seq = "AAAAAAAAAAAAAAAAAATGCTGAACAGTCCCCCCC"
-    assert amp1.masked_overlap(amp2, 10) is None
-    amp1.masked_seq = "AAAAAAAAAAAAAAAAAATGCTGAACAGTCCCCCCC"
-    amp2.masked_seq = None
-    assert amp1.masked_overlap(amp2, 10) is None
-    amp2.masked_seq = "CCTGCTGAACGGTTGATGCATCTCATGCTGACNNAGGTGTGGCCAAAAA"
-    assert amp1.masked_overlap(amp2, 7) == Match(18, 2, 8)
-    assert amp1.masked_overlap(amp2, 8) == Match(18, 2, 8)
-    assert amp1.masked_overlap(amp2, 9) == None
+    assert amp1.final_overlap(amp2, 10) is None
+    amp2.final_seq = "AAAAAAAAAAAAAAAAAATGCTGAACAGTCCCCCCC"
+    assert amp1.final_overlap(amp2, 10) is None
+    amp1.final_seq = "AAAAAAAAAAAAAAAAAATGCTGAACAGTCCCCCCC"
+    amp2.final_seq = None
+    assert amp1.final_overlap(amp2, 10) is None
+    amp2.final_seq = "CCTGCTGAACGGTTGATGCATCTCATGCTGACNNAGGTGTGGCCAAAAA"
+    assert amp1.final_overlap(amp2, 7) == Match(18, 2, 8)
+    assert amp1.final_overlap(amp2, 8) == Match(18, 2, 8)
+    assert amp1.final_overlap(amp2, 9) == None
 
-    amp1.masked_seq = "CCTGCTGAACGGTTGATGCATCTCATGCTGACNNAGGTGTGGCCAAAAA"
-    amp2.masked_seq = "NNAGGTGTGGCCTTTTTTTTTTTTTTTTTTTTTTTTTT"
-    assert amp1.masked_overlap(amp2, 10) == Match(34, 2, 10)
-    assert amp1.masked_overlap(amp2, 11) == None
+    amp1.final_seq = "CCTGCTGAACGGTTGATGCATCTCATGCTGACNNAGGTGTGGCCAAAAA"
+    amp2.final_seq = "NNAGGTGTGGCCTTTTTTTTTTTTTTTTTTTTTTTTTT"
+    assert amp1.final_overlap(amp2, 10) == Match(34, 2, 10)
+    assert amp1.final_overlap(amp2, 11) == None
 
-    amp1.masked_seq = "NNAGGTGTGGCCTTTTTTTTTTTTTTTTTTTTTTTTTT"
-    amp2.masked_seq = "AAAAAAAAAAAAAAAAANNNNNNNNNNN"
-    assert amp1.masked_overlap(amp2, 0) == Match(2, 0, 1)
-    assert amp1.masked_overlap(amp2, 2) == None
+    amp1.final_seq = "NNAGGTGTGGCCTTTTTTTTTTTTTTTTTTTTTTTTTT"
+    amp2.final_seq = "AAAAAAAAAAAAAAAAANNNNNNNNNNN"
+    assert amp1.final_overlap(amp2, 0) == Match(2, 0, 1)
+    assert amp1.final_overlap(amp2, 2) == None
+
+    amp1.final_seq = "NNNGGTGTGGCCTTTTTTTACTGATGCATGATTTTT"
+    amp2.final_seq = "TTTTTTGTGACGAAATTTTTTTTTTT"
+    assert amp1.final_overlap(amp2, 0) == Match(12, 15, 7)
+    assert amp1.final_overlap(amp2, 0, self_start=20) == Match(30, 14, 6)
+    assert amp1.final_overlap(amp2, 0, self_start=20, other_end=10) == Match(31, 0, 5)
+    assert amp1.final_overlap(amp2, 0, other_end=10) == Match(12, 0, 6)
 
 
 def test_load_amplicons_json_file():

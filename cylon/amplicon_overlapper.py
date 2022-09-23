@@ -5,77 +5,6 @@ import pyfastaq
 from cylon import utils
 
 
-def get_amplicon_overlaps(amplicons, min_match_length):
-    overlaps = []
-    for i in range(0, len(amplicons) - 1, 1):
-        overlaps.append(amplicons[i].masked_overlap(amplicons[i + 1], min_match_length))
-    return overlaps
-
-
-def amplicons_to_consensus_contigs(amplicons, min_match_length=20):
-    if all(not x.assemble_success for x in amplicons):
-        return None
-
-    overlaps = get_amplicon_overlaps(amplicons, min_match_length)
-    contigs = [[]]
-
-    # force adjacent contigs that have no overlap to be fails because
-    # we don't really know what happened
-    indexes_to_clear = set()
-
-    for i in range(0, len(amplicons) - 1):
-        if (
-            amplicons[i].assemble_success
-            and amplicons[i + 1].assemble_success
-            and overlaps[i] is None
-        ):
-            indexes_to_clear.add(i)
-            indexes_to_clear.add(i + 1)
-
-    for i in indexes_to_clear:
-        logging.debug(f"Failing amplicon because no overlap: {amplicons[i].name}")
-        amplicons[i].clear_seqs_because_overlap_fail()
-        if i > 0:
-            overlaps[i - 1] = None
-        if i < len(overlaps):
-            overlaps[i] = None
-
-    if all(not x.assemble_success for x in amplicons):
-        return None
-
-    for i in range(0, len(amplicons)):
-        logging.debug(
-            f"Overlapping amplicons. Processing {amplicons[i].name}. Assemble succes: {amplicons[i].assemble_success}"
-        )
-        if amplicons[i].assemble_success:
-            if i == 0:
-                start = 0
-            elif overlaps[i - 1] is None:
-                start = amplicons[i].left_primer_length
-            else:
-                start = max(overlaps[i - 1].b, 0)
-
-            if i > len(overlaps) - 1:
-                end = len(amplicons[i].masked_seq) - 1
-            elif overlaps[i] is None:
-                end = len(amplicons[i].masked_seq) - amplicons[i].right_primer_length
-            else:
-                end = overlaps[i].a
-
-            if len(contigs) == 0:
-                contigs.append([])
-            contigs[-1].append(amplicons[i].masked_seq[start:end])
-        else:
-            if len(contigs) > 0:
-                if len(contigs[-1]) == 0:
-                    contigs.pop()
-
-                contigs.append([])
-
-    contigs = ["".join(x).strip("N") for x in contigs if len(x) > 0]
-    return contigs
-
-
 def _make_split_contigs_fasta(contigs, outfile):
     with open(outfile, "w") as f:
         for d in contigs:
@@ -163,36 +92,228 @@ def consensus_contigs_to_consensus(
         return None
 
     consensus = []
+    trim_next = 0
+    bad_overlap_ns = 10
 
     for i, contig in enumerate(contigs):
         right_fields = mappings[(contig["name"], "right")]
+        consensus.append(contig["seq"][trim_next:])
 
-        consensus.append(contig["seq"])
         if i < len(contigs) - 1:
             next_left_fields = mappings[(contigs[i + 1]["name"], "left")]
             contig_end_in_ref = int(right_fields[8])
             next_contig_start_in_ref = int(next_left_fields[7])
-            if contig_end_in_ref < next_contig_start_in_ref:
+            # Usually we don't expect the contigs to overlap. In which case put
+            # Ns between them. But they can sometime overlap. When they do,
+            # look for an overlap between them based on the minimap2 mapping.
+            if contig_end_in_ref < next_contig_start_in_ref:  # don't overlap
                 consensus.append("N" * (next_contig_start_in_ref - contig_end_in_ref))
-            else:
-                logging.warning(
-                    f"Errors aligning contigs to reference to make final sequence. Order of contigs vs reference not as epxected. Cannot get gap between contigs: {contig['seq']} and {contigs[i+1]['seq']}. Aborting assembly"
+                trim_next = 0
+            else:  # they do overlap
+                overlap_len = contig_end_in_ref - next_contig_start_in_ref
+                end_in_contig = len(contig["seq"]) - (
+                    int(right_fields[1]) - int(right_fields[3])
                 )
-                return None
+                contig_ol_seq = contig["seq"][
+                    end_in_contig - overlap_len : end_in_contig
+                ]
+                next_start = int(next_left_fields[2])
+                next_ol_seq = contigs[i + 1]["seq"][
+                    next_start : next_start + overlap_len
+                ]
+                if contig_ol_seq == next_ol_seq:  # good overlap
+                    consensus[-1] = contig["seq"][
+                        trim_next : end_in_contig - overlap_len
+                    ]
+                    trim_next = 0
+                else:  # bad overlap, trim the ends and add Ns between
+                    overlap_len += bad_overlap_ns
+                    consensus[-1] = (
+                        contig["seq"][trim_next : end_in_contig - overlap_len]
+                        + "N" * bad_overlap_ns
+                    )
+                    trim_next = overlap_len
 
-    return "".join(consensus)
+    consensus = "".join([x for x in consensus if len(x) > 0])
+    if any([x != "N" for x in consensus]):
+        return consensus
+    else:
+        logging.warning(
+            "Errors aligning contigs to reference to make final sequence. No consensus made"
+        )
+        return None
+
+
+def _get_amplicon_ref_matches(amplicons, ref_fasta, outfile, debug=False):
+    amp_fa = f"{outfile}.tmp.amps.fa"
+    any_ok = False
+    with open(amp_fa, "w") as f:
+        for i, amplicon in enumerate(amplicons):
+            if amplicon.assemble_success:
+                any_ok = True
+                print(f">{i}", amplicon.name, file=f)
+                print(amplicon.final_seq, file=f)
+
+    if not any_ok:
+        logging.warning("No good amplicons to overlap. Aborting assembly")
+        if not debug:
+            os.unlink(amp_fa)
+        return {}
+
+    utils.syscall(f"minimap2 -x sr -t 1 {ref_fasta} {amp_fa} > {outfile}")
+    if not debug:
+        os.unlink(amp_fa)
+    matches = {}
+
+    with open(outfile) as f:
+        for line in f:
+            (
+                amp_index,
+                _,
+                amp_start,
+                amp_end,
+                strand,
+                _,
+                _,
+                ref_start,
+                ref_end,
+                match_len,
+                *_,
+            ) = line.rstrip().split("\t")
+            if strand != "+":
+                continue
+            new_match = {
+                "amp_start": int(amp_start),
+                "amp_end": int(amp_end),
+                "ref_start": int(ref_start),
+                "ref_end": int(ref_end),
+                "len": int(match_len),
+            }
+            i = int(amp_index)
+            if i in matches and matches[i]["len"] > new_match["len"]:
+                continue
+            matches[i] = new_match
+            amplicons[i].ref_match = new_match
+
+    return matches
+
+
+def _clear_no_ref_matches(amplicons, ref_matches):
+    indexes_to_clear = set()
+    for i in range(0, len(amplicons) - 1):
+        if amplicons[i].assemble_success and i not in ref_matches:
+            indexes_to_clear.add(i)
+
+    for i in indexes_to_clear:
+        logging.debug(
+            f"Failing amplicon because no match to reference: {amplicons[i].name}"
+        )
+        amplicons[i].clear_seqs_because_no_ref_match()
+
+
+def _get_starts_and_ends(amplicons, ref_matches):
+    starts_ends = [[None, None] for _ in range(len(amplicons))]
+    add_breaks = set()
+    fails = set()
+    min_overlap_len = 10
+    for i in range(len(amplicons)):
+        if i in ref_matches and (i + 1) in ref_matches:
+            expect_ol_len = ref_matches[i]["ref_end"] - ref_matches[i + 1]["ref_start"]
+            if expect_ol_len > 0:
+                if expect_ol_len >= min_overlap_len:
+                    perfect_ol = amplicons[i].final_overlap(
+                        amplicons[i + 1],
+                        min_overlap_len,
+                        self_start=ref_matches[i]["amp_end"] - expect_ol_len - 5,
+                        other_end=ref_matches[i + 1]["amp_end"] + 5,
+                    )
+                else:
+                    perfect_ol = None
+
+                if perfect_ol is None:
+                    end = ref_matches[i]["amp_end"] - expect_ol_len
+                    start = ref_matches[i + 1]["amp_start"]
+                    if end < 0 or start > len(amplicons[i + 1]):
+                        fails.add(i)
+                    else:
+                        starts_ends[i][1] = end
+                        starts_ends[i + 1][0] = start
+                else:
+                    starts_ends[i][1] = perfect_ol.a
+                    starts_ends[i + 1][0] = max(perfect_ol.b, 0)
+            else:  # no overlap from the minimap mappings
+                starts_ends[i][1] = len(amplicons[i].final_seq)
+                starts_ends[i + 1][0] = 0
+                add_breaks.add(i)
+        elif i in ref_matches:  # this one matches, next one doesn't
+            starts_ends[i][1] = len(amplicons[i].final_seq)
+        elif (i + 1) in ref_matches:  # this doesn't match, next one does
+            starts_ends[i + 1][0] = 0
+            fails.add(i)
+        else:  # neither matched the ref
+            fails.add(i)
+
+        if i in ref_matches and starts_ends[i][0] is None:
+            starts_ends[i][0] = 0
+
+    last_i = len(amplicons) - 1
+    if (
+        starts_ends[last_i][0] is not None
+        and last_i in ref_matches
+        and last_i not in fails
+    ):
+        starts_ends[last_i][1] = len(amplicons[last_i].final_seq)
+
+    return starts_ends, add_breaks
+
+
+def _contigs_from_starts_ends(amplicons, starts_ends, add_breaks):
+    contigs = [[]]
+    for i, amplicon in enumerate(amplicons):
+        logging.debug(
+            f"Overlapping amplicons. Processing {amplicon.name}. Assemble succes: {amplicon.assemble_success}"
+        )
+        if None not in starts_ends[i]:
+            contigs[-1].append(
+                amplicon.final_seq[starts_ends[i][0] : starts_ends[i][1]]
+            )
+        elif len(contigs[-1]) > 0:
+            contigs.append([])
+
+        if i in add_breaks:
+            contigs.append([])
+
+    return ["".join(x).strip("N") for x in contigs if len(x) > 0]
+
+
+def amplicons_to_consensus_contigs(amplicons, ref_fasta, minimap_out, debug=False):
+    ref_matches = _get_amplicon_ref_matches(
+        amplicons, ref_fasta, minimap_out, debug=debug
+    )
+    if len(ref_matches) == 0:
+        logging.warning(
+            "No amplicon consensus sequences matched the reference. Aborting assembly"
+        )
+    if not debug:
+        utils.rm_rf(minimap_out)
+
+    _clear_no_ref_matches(amplicons, ref_matches)
+    starts_ends, add_breaks = _get_starts_and_ends(amplicons, ref_matches)
+    if all(not x.assemble_success for x in amplicons):
+        return None
+    return _contigs_from_starts_ends(amplicons, starts_ends, add_breaks)
 
 
 def assemble_amplicons(
     amplicons,
     ref_fasta,
     outprefix,
-    min_match_length=20,
     ref_map_end_allowance=20,
     debug=False,
 ):
+    minimap_out = f"{outprefix}.minimap2.paf"
     consensus_contigs = amplicons_to_consensus_contigs(
-        amplicons, min_match_length=min_match_length
+        amplicons, ref_fasta, minimap_out, debug=debug
     )
     if consensus_contigs is None:
         logging.warning("Errors trying to overlap contigs. Aborting assembly")

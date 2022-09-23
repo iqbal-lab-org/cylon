@@ -18,8 +18,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - When building consensus from contigs, if a contig does not map then remove
   the contig and carry on, instead of aborting the entire assembly
 
-- Fail amplicon if its sequence after stripping Ns is less than 3/4 of
-  (length of the amplicon - primer lengths)
+- Rewrite overlapper to use more amplicons, and also use more of each amplicon
+  (less trimming at ends). New method is more tolerant of failed amplicons,
+  still keeping adjacent amplicons.
+
+
 
 ### Removed
 

@@ -54,6 +54,8 @@ def polish_each_amplicon(
         amplicons_to_fail = set()
 
     for i, amplicon in enumerate(amplicons):
+        if i == len(amplicons) - 5:
+            logging.info("Processing the final five")
         logging.debug(
             f"Start processing amplicon {amplicon.name} ({i+1}/{len(amplicons)})"
         )
@@ -125,7 +127,9 @@ def load_and_check_reads_amp_dir(reads_per_amp_dir, amplicons):
 
     for amplicon_name in manifest:
         if amplicon_name not in all_amp_names:
-            raise Exception(f"Amplicon '{amplicon_name}' in json {json_file} but not in amplicon scheme")
+            raise Exception(
+                f"Amplicon '{amplicon_name}' in json {json_file} but not in amplicon scheme"
+            )
 
         reads_file_full_path = os.path.join(reads_per_amp_dir, manifest[amplicon_name])
         if not os.path.exists(reads_file_full_path):
@@ -153,7 +157,6 @@ def run_assembly_pipeline(
     min_read_length=200,
     racon_iterations=3,
     min_depth_for_not_N=5,
-    min_amp_overlap_len=20,
     contig_map_end_allowance=20,
     amplicons_to_fail=None,
     wgs=False,
@@ -267,7 +270,6 @@ def run_assembly_pipeline(
             amplicons,
             ref_fasta,
             overlap_out,
-            min_match_length=min_amp_overlap_len,
             ref_map_end_allowance=contig_map_end_allowance,
             debug=debug,
         )

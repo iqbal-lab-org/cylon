@@ -6,7 +6,13 @@ import pyfastaq
 from cylon import utils
 
 
-def run_racon(seq_to_polish, reads_filename, outprefix, minimap_opts="-t 1 -x map-ont", debug=False):
+def run_racon(
+    seq_to_polish,
+    reads_filename,
+    outprefix,
+    minimap_opts="-t 1 -x map-ont",
+    debug=False,
+):
     if minimap_opts is None:
         minimap_opts = "-t 1 -x map-ont"
     fasta_to_polish = f"{outprefix}.to_polish.fa"
@@ -23,7 +29,8 @@ def run_racon(seq_to_polish, reads_filename, outprefix, minimap_opts="-t 1 -x ma
     # 500. So set it to be a bit more that the sequence we are correcting.
     window_length = len(seq_to_polish) + 100
     completed_process = utils.syscall(
-        f"racon --window-length {window_length} --no-trimming {reads_filename} {sam} {fasta_to_polish}", allow_fail=True
+        f"racon --window-length {window_length} --no-trimming {reads_filename} {sam} {fasta_to_polish}",
+        allow_fail=True,
     )
     if completed_process.returncode != 0:
         return None
@@ -41,7 +48,12 @@ def run_racon(seq_to_polish, reads_filename, outprefix, minimap_opts="-t 1 -x ma
 
 
 def run_racon_iterations(
-    seq_to_polish, reads_filename, outdir, max_iterations=3, debug=False, minimap_opts=None,
+    seq_to_polish,
+    reads_filename,
+    outdir,
+    max_iterations=3,
+    debug=False,
+    minimap_opts=None,
 ):
     reads_filename = os.path.abspath(reads_filename)
     os.mkdir(outdir)
@@ -49,7 +61,13 @@ def run_racon_iterations(
     for iteration in range(max_iterations):
         logging.debug(f"Start racon iteration {iteration}")
         outprefix = os.path.join(outdir, f"racon.{iteration}")
-        polished_seq = run_racon(seq_to_polish, reads_filename, outprefix, debug=debug, minimap_opts=minimap_opts)
+        polished_seq = run_racon(
+            seq_to_polish,
+            reads_filename,
+            outprefix,
+            debug=debug,
+            minimap_opts=minimap_opts,
+        )
         if polished_seq is None:
             return None
         if debug:
