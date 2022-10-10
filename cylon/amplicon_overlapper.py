@@ -67,6 +67,16 @@ def _check_mappings(contigs, mappings):
     return bad_contig_indexes
 
 
+def minimap2_hit_to_nm(hit):
+    nm = [x for x in hit if x.startswith("NM:i:")]
+    if len(nm) != 1:
+        return None
+    try:
+        nm, i, nm_count = nm[0].split(":")
+        return int(nm_count)
+    except:
+        return None
+
 def consensus_contigs_to_consensus(
     contigs, ref_fasta, outprefix, map_end_allowance=20, debug=False
 ):
@@ -101,15 +111,23 @@ def consensus_contigs_to_consensus(
 
         if i < len(contigs) - 1:
             next_left_fields = mappings[(contigs[i + 1]["name"], "left")]
+            contig_start_in_ref = int(right_fields[7])
             contig_end_in_ref = int(right_fields[8])
             next_contig_start_in_ref = int(next_left_fields[7])
             # Usually we don't expect the contigs to overlap. In which case put
             # Ns between them. But they can sometime overlap. When they do,
             # look for an overlap between them based on the minimap2 mapping.
-            if contig_end_in_ref < next_contig_start_in_ref:  # don't overlap
+            # Completely stop if the contigs don't map in the correct
+            # order compared to the reference
+            if next_contig_start_in_ref < contig_start_in_ref:
+                consensus = ""
+                break
+
+            # If the contigs do not overlap each other based on ref coords
+            if not (contig_start_in_ref < next_contig_start_in_ref < contig_end_in_ref):
                 consensus.append("N" * (next_contig_start_in_ref - contig_end_in_ref))
                 trim_next = 0
-            else:  # they do overlap
+            else:
                 overlap_len = contig_end_in_ref - next_contig_start_in_ref
                 end_in_contig = len(contig["seq"]) - (
                     int(right_fields[1]) - int(right_fields[3])
@@ -126,13 +144,20 @@ def consensus_contigs_to_consensus(
                         trim_next : end_in_contig - overlap_len
                     ]
                     trim_next = 0
-                else:  # bad overlap, trim the ends and add Ns between
-                    overlap_len += bad_overlap_ns
-                    consensus[-1] = (
-                        contig["seq"][trim_next : end_in_contig - overlap_len]
-                        + "N" * bad_overlap_ns
-                    )
-                    trim_next = overlap_len
+                else:  # non-perfect overlap, pick seq with fewest mismatches
+                    this_nm = minimap2_hit_to_nm(right_fields)
+                    next_nm = minimap2_hit_to_nm(next_left_fields)
+                    if this_nm is None or next_nm is None:
+                        consensus = ""
+                        break
+                    best = "this" if this_nm < next_nm else "next"
+                    if this_nm < next_nm:
+                        consensus[-1] = contig["seq"][ trim_next : end_in_contig] # FIXME
+                        trim_next = overlap_len - 1
+                    else:
+                        consensus[-1] = contig["seq"][ trim_next : end_in_contig - overlap_len] # FIXME
+                        trim_next = 0
+
 
     consensus = "".join([x for x in consensus if len(x) > 0])
     if any([x != "N" for x in consensus]):
