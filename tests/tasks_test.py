@@ -30,6 +30,7 @@ def test_assemble():
     options.min_read_length = 200
     options.racon_iterations = 3
     options.min_depth_for_not_N = 1
+    options.max_amp_N_proportion = 0.5
     options.contig_map_end_allowance = 20
     options.amplicons_to_fail_file = None
     options.wgs = False

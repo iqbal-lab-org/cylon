@@ -140,6 +140,13 @@ def main(args=None):
         metavar="INT",
     )
     subparser_assemble.add_argument(
+        "--max_amp_N_proportion",
+        help="After polishing, fail the amplicon if more than this proportion of the sequence is Ns [%(default)s]",
+        default=0.5,
+        type=float,
+        metavar="FLOAT",
+    )
+    subparser_assemble.add_argument(
         "--contig_map_end_allowance",
         help="When mapping contigs ends to the reference to fill in failed amplicons with Ns, allow the mapping to start up to this distance away from the contig end [%(default)s]",
         default=20,

@@ -212,7 +212,7 @@ class Amplicon:
         min_read_length=200,
         racon_iterations=3,
         min_depth_for_not_N=5,
-        max_polished_N_prop=0.1,
+        max_polished_N_prop=0.5,
         wgs=False,
         debug=False,
         minimap_opts=None,

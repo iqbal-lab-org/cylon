@@ -51,6 +51,7 @@ def run(options):
         min_read_length=options.min_read_length,
         racon_iterations=options.racon_iterations,
         min_depth_for_not_N=options.min_depth_for_not_N,
+        max_polished_N_prop=options.max_amp_N_proportion,
         contig_map_end_allowance=options.contig_map_end_allowance,
         amplicons_to_fail=amplicons_to_fail,
         wgs=options.wgs,
