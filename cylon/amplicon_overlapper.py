@@ -77,6 +77,23 @@ def minimap2_hit_to_nm(hit):
     except:
         return None
 
+
+def make_trimmed_contigs(contigs_in, window=20):
+    contigs_out = []
+    for i, seq in enumerate(contigs_in):
+        start = 0
+        while start < len(seq) - window and seq[start:start +window].count("N") > 0:
+            start += 1
+        end = len(seq)
+        while end > window and seq[end-window:end].count("N") > 0:
+            end -= 1
+        if start < end:
+            logging.debug(f"contig trim {i}, {len(seq)}, {start}, {end}, {seq}")
+            contigs_out.append({"name": str(i), "seq": seq[start:end]})
+            logging.debug(f"contig trimmed {i}, {len(seq)}, {start}, {end}, {seq[start:end]}")
+    return contigs_out
+
+
 def consensus_contigs_to_consensus(
     contigs, ref_fasta, outprefix, map_end_allowance=20, debug=False
 ):
@@ -85,7 +102,7 @@ def consensus_contigs_to_consensus(
         return None
 
     fa_to_map = f"{outprefix}.to_map.fa"
-    contigs = [{"name": str(i), "seq": seq} for i, seq in enumerate(contigs)]
+    contigs = make_trimmed_contigs(contigs, window=20)
     _make_split_contigs_fasta(contigs, fa_to_map)
     mappings = _map_split_contigs(fa_to_map, ref_fasta, end_allowance=map_end_allowance)
     if not debug:

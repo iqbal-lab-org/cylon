@@ -117,6 +117,21 @@ def test_amplicons_to_consensus_contigs_2():
     os.unlink(ref_fa)
 
 
+def test_make_trimmed_contigs():
+    contigs_in = [
+        "ACGTG",
+        "NNNAGTNNN",
+        "NANANAN",
+        "ANAATNA",
+    ]
+    got = amplicon_overlapper.make_trimmed_contigs(contigs_in, window=3)
+    assert got == [
+        {"name": "0", "seq": "ACGTG"},
+        {"name": "1", "seq": "AGT"},
+        {"name": "3", "seq": "AAT"},
+    ]
+
+
 def test_consensus_contigs_to_consensus():
     ref_fasta = os.path.join(data_dir, "consensus_contigs_to_consensus.fa")
     outprefix = "tmp.consensus_contigs_to_consensus"
