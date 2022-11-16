@@ -319,7 +319,7 @@ class Amplicon:
             autojunk=False,
         )
         match = seq_matcher.find_longest_match(
-            self_start, len(self.final_seq), 0, other_end
+            self_start, len(self.final_seq), 0, min(other_end, len(other.final_seq))
         )
         return match if match.size >= min_match_length else None
 
