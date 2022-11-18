@@ -78,7 +78,7 @@ def minimap2_hit_to_nm(hit):
         return None
 
 
-def make_trimmed_contigs(contigs_in, window=20):
+def make_trimmed_contigs(contigs_in, window=25):
     contigs_out = []
     for i, seq in enumerate(contigs_in):
         start = 0
@@ -95,14 +95,14 @@ def make_trimmed_contigs(contigs_in, window=20):
 
 
 def consensus_contigs_to_consensus(
-    contigs, ref_fasta, outprefix, map_end_allowance=20, debug=False
+    contigs, ref_fasta, outprefix, map_end_allowance=20, debug=False, trim_end_window=25
 ):
     if contigs is None or len(contigs) == 0:
         logging.warning("No contigs were made. Aborting assembly")
         return None
 
     fa_to_map = f"{outprefix}.to_map.fa"
-    contigs = make_trimmed_contigs(contigs, window=20)
+    contigs = make_trimmed_contigs(contigs, window=trim_end_window)
     _make_split_contigs_fasta(contigs, fa_to_map)
     mappings = _map_split_contigs(fa_to_map, ref_fasta, end_allowance=map_end_allowance)
     if not debug:
