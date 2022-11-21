@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 import pyfastaq
 from cylon import utils
@@ -8,10 +9,11 @@ from cylon import utils
 def _make_split_contigs_fasta(contigs, outfile):
     with open(outfile, "w") as f:
         for d in contigs:
+            length = min(250, int(len(d["seq"]) / 2))
             print(f">{d['name']}.left", file=f)
-            print(d["seq"][: int(len(d["seq"]) / 2)], file=f)
+            print(d["seq"][:length], file=f)
             print(f">{d['name']}.right", file=f)
-            print(d["seq"][int(len(d["seq"]) / 2) :], file=f)
+            print(d["seq"][-length:], file=f)
 
 
 def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20):
@@ -78,9 +80,18 @@ def minimap2_hit_to_nm(hit):
         return None
 
 
-def make_trimmed_contigs(contigs_in, window=25):
+def split_contigs_on_gaps(contigs_in, gap_length=10):
     contigs_out = []
-    for i, seq in enumerate(contigs_in):
+    regex = re.compile("N{" + str(gap_length) + ",}")
+    for contig in contigs_in:
+        contigs_out.extend([x for x in re.split(regex, contig) if len(x)>0])
+    return contigs_out
+
+
+def make_trimmed_contigs(contigs_in, window=30):
+    contigs_out = []
+    contigs_after_gaps = split_contigs_on_gaps(contigs_in)
+    for i, seq in enumerate(contigs_after_gaps):
         start = 0
         while start < len(seq) - window and seq[start:start +window].count("N") > 0:
             start += 1
@@ -95,7 +106,7 @@ def make_trimmed_contigs(contigs_in, window=25):
 
 
 def consensus_contigs_to_consensus(
-    contigs, ref_fasta, outprefix, map_end_allowance=20, debug=False, trim_end_window=25
+    contigs, ref_fasta, outprefix, map_end_allowance=20, debug=False, trim_end_window=30
 ):
     if contigs is None or len(contigs) == 0:
         logging.warning("No contigs were made. Aborting assembly")

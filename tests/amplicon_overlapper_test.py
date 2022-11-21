@@ -117,6 +117,15 @@ def test_amplicons_to_consensus_contigs_2():
     os.unlink(ref_fa)
 
 
+def test_split_contigs_on_gaps():
+    contigs = [
+        "A",
+        "NNNNANANNCNNNGNNNNTNNNN"
+    ]
+    got = amplicon_overlapper.split_contigs_on_gaps(contigs, gap_length=3)
+    assert got == ["A", "ANANNC", "G", "T"]
+
+
 def test_make_trimmed_contigs():
     contigs_in = [
         "ACGTG",
@@ -195,7 +204,7 @@ def test_consensus_contigs_to_consensus_2():
     ref_fasta = os.path.join(data_dir, "covid.ref.MN908947.3.fa")
     contigs = [contig1 + worse_overlap_seq, better_overlap_seq + contig2]
     got = amplicon_overlapper.consensus_contigs_to_consensus(
-        contigs, ref_fasta, outprefix
+        contigs, ref_fasta, outprefix, trim_end_window=25,
     )
     assert got == expect
 
