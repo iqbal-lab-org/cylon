@@ -3,6 +3,7 @@ import os
 import re
 
 import pyfastaq
+import pymummer
 from cylon import utils
 
 
@@ -16,38 +17,35 @@ def _make_split_contigs_fasta(contigs, outfile):
             print(d["seq"][-length:], file=f)
 
 
-def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20):
-    command = f"minimap2 -t 1 -c {ref_fasta} {to_map_fasta}"
-    minimap2_out = utils.syscall(command)
-    paf_lines = minimap2_out.stdout.strip().split("\n")
+def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20, debug=False):
+    tmp_nucmer_out = f"{to_map_fasta}.tmp.nucmer"
+    runner = pymummer.nucmer.Runner(ref_fasta, to_map_fasta, tmp_nucmer_out, mincluster=20)
+    runner.run()
     mappings = {}
-    for line in paf_lines:
-        logging.debug(f"mapping split contigs. paf_line: {line.rstrip()}")
-        # if there were no mappings we can get an empty line
-        if line == "":
-            continue
-        fields = line.rstrip().split()
-        if fields[4] != "+":
+    for hit in pymummer.coords_file.reader(tmp_nucmer_out):
+        if not hit.on_same_strand():
             continue
 
-        name, left_or_right = fields[0].split(".")
-        if (left_or_right == "left" and int(fields[2]) > end_allowance) or (
-            left_or_right == "right" and int(fields[3]) + end_allowance < int(fields[3])
+        name, left_or_right = hit.qry_name.split(".")
+        if (left_or_right == "left" and hit.qry_start > end_allowance) or (
+            left_or_right == "right" and hit.qry_end + end_allowance < hit.qry_length
         ):
             continue
 
         key = (name, left_or_right)
 
         if key not in mappings:
-            mappings[key] = fields
-        elif (left_or_right == "left" and int(fields[7]) < int(mappings[key][7])) or (
-            left_or_right == "right" and int(fields[8]) > int(mappings[key][8])
+            mappings[key] = hit
+        elif (left_or_right == "left" and hit.ref_start < mappings[key].ref_start) or (
+            left_or_right == "right" and hit.ref_end > mappings[key].ref_end
         ):
             mappings[key] = fields
 
-        logging.debug(
-            "PAF mapping contigs to ref: " + " ".join([str(x) for x in fields])
-        )
+        logging.debug(f"nucmer mapping contigs to ref {hit}")
+
+    if not debug:
+        os.unlink(tmp_nucmer_out)
+
     return mappings
 
 
@@ -88,7 +86,7 @@ def split_contigs_on_gaps(contigs_in, gap_length=10):
     return contigs_out
 
 
-def make_trimmed_contigs(contigs_in, window=30):
+def make_trimmed_contigs(contigs_in, window=20):
     contigs_out = []
     contigs_after_gaps = split_contigs_on_gaps(contigs_in)
     for i, seq in enumerate(contigs_after_gaps):
@@ -102,11 +100,12 @@ def make_trimmed_contigs(contigs_in, window=30):
             logging.debug(f"contig trim {i}, {len(seq)}, {start}, {end}, {seq}")
             contigs_out.append({"name": str(i), "seq": seq[start:end]})
             logging.debug(f"contig trimmed {i}, {len(seq)}, {start}, {end}, {seq[start:end]}")
+
     return contigs_out
 
 
 def consensus_contigs_to_consensus(
-    contigs, ref_fasta, outprefix, map_end_allowance=20, debug=False, trim_end_window=30
+    contigs, ref_fasta, outprefix, map_end_allowance=20, debug=False, trim_end_window=20
 ):
     if contigs is None or len(contigs) == 0:
         logging.warning("No contigs were made. Aborting assembly")
@@ -134,14 +133,14 @@ def consensus_contigs_to_consensus(
     bad_overlap_ns = 10
 
     for i, contig in enumerate(contigs):
-        right_fields = mappings[(contig["name"], "right")]
+        right_hit = mappings[(contig["name"], "right")]
         consensus.append(contig["seq"][trim_next:])
 
         if i < len(contigs) - 1:
-            next_left_fields = mappings[(contigs[i + 1]["name"], "left")]
-            contig_start_in_ref = int(right_fields[7])
-            contig_end_in_ref = int(right_fields[8])
-            next_contig_start_in_ref = int(next_left_fields[7])
+            next_left_hit = mappings[(contigs[i + 1]["name"], "left")]
+            contig_start_in_ref = right_hit.ref_start
+            contig_end_in_ref = right_hit.ref_end + 1
+            next_contig_start_in_ref = next_left_hit.ref_start
             # Usually we don't expect the contigs to overlap. In which case put
             # Ns between them. But they can sometime overlap. When they do,
             # look for an overlap between them based on the minimap2 mapping.
@@ -157,13 +156,12 @@ def consensus_contigs_to_consensus(
                 trim_next = 0
             else:
                 overlap_len = contig_end_in_ref - next_contig_start_in_ref
-                end_in_contig = len(contig["seq"]) - (
-                    int(right_fields[1]) - int(right_fields[3])
-                )
+                end_in_contig = len(contig["seq"]) - (right_hit.qry_length - right_hit.qry_end - 1)
+
                 contig_ol_seq = contig["seq"][
                     end_in_contig - overlap_len : end_in_contig
                 ]
-                next_start = int(next_left_fields[2])
+                next_start = next_left_hit.qry_start
                 next_ol_seq = contigs[i + 1]["seq"][
                     next_start : next_start + overlap_len
                 ]
@@ -172,20 +170,13 @@ def consensus_contigs_to_consensus(
                         trim_next : end_in_contig - overlap_len
                     ]
                     trim_next = 0
-                else:  # non-perfect overlap, pick seq with fewest mismatches
-                    this_nm = minimap2_hit_to_nm(right_fields)
-                    next_nm = minimap2_hit_to_nm(next_left_fields)
-                    if this_nm is None or next_nm is None:
-                        consensus = ""
-                        break
-                    best = "this" if this_nm < next_nm else "next"
-                    if this_nm < next_nm:
-                        consensus[-1] = contig["seq"][ trim_next : end_in_contig] # FIXME
+                else:  # non-perfect overlap, pick seq with best % identity
+                    if right_hit.percent_identity >= next_left_hit.percent_identity:
+                        consensus[-1] = contig["seq"][ trim_next : end_in_contig]
                         trim_next = overlap_len - 1
                     else:
-                        consensus[-1] = contig["seq"][ trim_next : end_in_contig - overlap_len] # FIXME
+                        consensus[-1] = contig["seq"][ trim_next : end_in_contig - overlap_len]
                         trim_next = 0
-
 
     consensus = "".join([x for x in consensus if len(x) > 0])
     if any([x != "N" for x in consensus]):

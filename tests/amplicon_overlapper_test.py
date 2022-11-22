@@ -181,7 +181,7 @@ def test_consensus_contigs_to_consensus():
 
     # Add one short contig that should get removed because won't map well
     # enough to the ref
-    contigs = [contig1, contig2[:40]]
+    contigs = [contig1, contig2[:20]]
     got = amplicon_overlapper.consensus_contigs_to_consensus(
         contigs, ref_fasta, outprefix
     )

@@ -1,2 +1,3 @@
 pyfastaq
+pymummer
 pysam

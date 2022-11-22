@@ -46,6 +46,17 @@ fi
 cd ..
 cp -s minimap2-${MINIMAP2_V}/minimap2 .
 
+#________________________ mummer ____________________________#
+cd $install_root
+wget -q https://github.com/mummer4/mummer/releases/download/v4.0.0rc1/mummer-4.0.0rc1.tar.gz
+tar -xvf mummer-4.0.0rc1.tar.gz
+cd mummer-4.0.0rc1
+./configure LDFLAGS=-static
+make
+make install
+ldconfig
+cd ..
+
 #________________________ racon _____________________________#
 git clone --recursive https://github.com/lbcb-sci/racon.git racon-git
 cd racon-git
