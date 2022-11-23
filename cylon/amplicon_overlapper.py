@@ -19,7 +19,9 @@ def _make_split_contigs_fasta(contigs, outfile):
 
 def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20, debug=False):
     tmp_nucmer_out = f"{to_map_fasta}.tmp.nucmer"
-    runner = pymummer.nucmer.Runner(ref_fasta, to_map_fasta, tmp_nucmer_out, mincluster=20)
+    runner = pymummer.nucmer.Runner(
+        ref_fasta, to_map_fasta, tmp_nucmer_out, mincluster=20
+    )
     runner.run()
     mappings = {}
     for hit in pymummer.coords_file.reader(tmp_nucmer_out):
@@ -78,7 +80,7 @@ def split_contigs_on_gaps(contigs_in, gap_length=10):
     contigs_out = []
     regex = re.compile("N{" + str(gap_length) + ",}")
     for contig in contigs_in:
-        contigs_out.extend([x for x in re.split(regex, contig) if len(x)>0])
+        contigs_out.extend([x for x in re.split(regex, contig) if len(x) > 0])
     return contigs_out
 
 
@@ -87,15 +89,17 @@ def make_trimmed_contigs(contigs_in, window=20):
     contigs_after_gaps = split_contigs_on_gaps(contigs_in)
     for i, seq in enumerate(contigs_after_gaps):
         start = 0
-        while start < len(seq) - window and seq[start:start +window].count("N") > 0:
+        while start < len(seq) - window and seq[start : start + window].count("N") > 0:
             start += 1
         end = len(seq)
-        while end > window and seq[end-window:end].count("N") > 0:
+        while end > window and seq[end - window : end].count("N") > 0:
             end -= 1
         if start < end:
             logging.debug(f"contig trim {i}, {len(seq)}, {start}, {end}, {seq}")
             contigs_out.append({"name": str(i), "seq": seq[start:end]})
-            logging.debug(f"contig trimmed {i}, {len(seq)}, {start}, {end}, {seq[start:end]}")
+            logging.debug(
+                f"contig trimmed {i}, {len(seq)}, {start}, {end}, {seq[start:end]}"
+            )
 
     return contigs_out
 
@@ -126,7 +130,6 @@ def consensus_contigs_to_consensus(
 
     consensus = []
     trim_next = 0
-    bad_overlap_ns = 10
 
     for i, contig in enumerate(contigs):
         right_hit = mappings[(contig["name"], "right")]
@@ -152,7 +155,9 @@ def consensus_contigs_to_consensus(
                 trim_next = 0
             else:
                 overlap_len = contig_end_in_ref - next_contig_start_in_ref
-                end_in_contig = len(contig["seq"]) - (right_hit.qry_length - right_hit.qry_end - 1)
+                end_in_contig = len(contig["seq"]) - (
+                    right_hit.qry_length - right_hit.qry_end - 1
+                )
 
                 contig_ol_seq = contig["seq"][
                     end_in_contig - overlap_len : end_in_contig
@@ -168,10 +173,12 @@ def consensus_contigs_to_consensus(
                     trim_next = 0
                 else:  # non-perfect overlap, pick seq with best % identity
                     if right_hit.percent_identity >= next_left_hit.percent_identity:
-                        consensus[-1] = contig["seq"][ trim_next : end_in_contig]
+                        consensus[-1] = contig["seq"][trim_next:end_in_contig]
                         trim_next = overlap_len - 1
                     else:
-                        consensus[-1] = contig["seq"][ trim_next : end_in_contig - overlap_len]
+                        consensus[-1] = contig["seq"][
+                            trim_next : end_in_contig - overlap_len
+                        ]
                         trim_next = 0
 
     consensus = "".join([x for x in consensus if len(x) > 0])

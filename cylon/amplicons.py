@@ -5,8 +5,6 @@ from operator import attrgetter
 import os
 import random
 
-import pyfastaq
-
 from cylon import racon, utils
 
 
@@ -221,7 +219,7 @@ class Amplicon:
         if reads_file is None:
             if bam_to_slice_reads is None:
                 self.polish_data["Comments"].append(
-                    f"No reads provided. Calling this amplicon failed"
+                    "No reads provided. Calling this amplicon failed"
                 )
                 return
 
@@ -319,7 +317,10 @@ class Amplicon:
             autojunk=False,
         )
         match = seq_matcher.find_longest_match(
-            max(0, self_start), len(self.final_seq), 0, min(other_end, len(other.final_seq))
+            max(0, self_start),
+            len(self.final_seq),
+            0,
+            min(other_end, len(other.final_seq)),
         )
         return match if match.size >= min_match_length else None
 
