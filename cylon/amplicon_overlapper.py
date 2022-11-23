@@ -34,12 +34,8 @@ def _map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20, debug=False):
 
         key = (name, left_or_right)
 
-        if key not in mappings:
+        if key not in mappings or mappings[key].hit_length_qry < hit.hit_length_qry:
             mappings[key] = hit
-        elif (left_or_right == "left" and hit.ref_start < mappings[key].ref_start) or (
-            left_or_right == "right" and hit.ref_end > mappings[key].ref_end
-        ):
-            mappings[key] = fields
 
         logging.debug(f"nucmer mapping contigs to ref {hit}")
 
