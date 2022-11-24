@@ -1,3 +1,4 @@
+biopython
 pyfastaq
 pymummer
 pysam
