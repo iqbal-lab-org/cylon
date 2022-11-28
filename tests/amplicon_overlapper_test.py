@@ -131,11 +131,7 @@ def test_make_trimmed_contigs():
         "ANAATNA",
     ]
     got = amplicon_overlapper.make_trimmed_contigs(contigs_in, window=3)
-    assert got == [
-        {"name": "0", "seq": "ACGTG"},
-        {"name": "1", "seq": "AGT"},
-        {"name": "3", "seq": "AAT"},
-    ]
+    assert got == ["ACGTG", "AGT", "AAT"]
 
 
 def test_consensus_contigs_to_consensus_1():
@@ -169,17 +165,21 @@ def test_consensus_contigs_to_consensus_1():
     utils.rm_rf(f"{outprefix}.*")
 
     # contigs in wrong order, should remove smallest wrong contig
-    contigs = [contig2, contig1]
+    contigs = [contig2, contig1[2:]]  # contig 1 shorter than 2 now
     got = amplicon_overlapper.consensus_contigs_to_consensus(
         contigs, ref_fasta, outprefix
     )
-    expect = contig1 if len(contig1) > len(contig2) else contig2
-    assert got == expect
+    assert got == contig2
+    contigs = [contig2[2:], contig1]  # contig 2 shorter than 1 now
+    got = amplicon_overlapper.consensus_contigs_to_consensus(
+        contigs, ref_fasta, outprefix
+    )
+    assert got == contig1
     utils.rm_rf(f"{outprefix}.*")
 
     # Add one short contig that should get removed because won't map well
     # enough to the ref
-    contigs = [contig1, contig2[:20]]
+    contigs = [contig1, contig2[:10]]
     got = amplicon_overlapper.consensus_contigs_to_consensus(
         contigs, ref_fasta, outprefix
     )
@@ -202,11 +202,7 @@ def test_consensus_contigs_to_consensus_2():
     ref_fasta = os.path.join(data_dir, "covid.ref.MN908947.3.fa")
     contigs = [contig1 + worse_overlap_seq, better_overlap_seq + contig2]
     got = amplicon_overlapper.consensus_contigs_to_consensus(
-        contigs,
-        ref_fasta,
-        outprefix,
-        trim_end_window=25,
-        debug=True
+        contigs, ref_fasta, outprefix, trim_end_window=25, debug=True
     )
     assert got == expect
 
@@ -269,9 +265,9 @@ def test_consensus_contigs_to_consensus_4():
     expect = contig0 + "N" * 171 + contig1[:-20] + contig2[98:]
     assert got == expect
 
+
 def test_consensus_contigs_to_consensus_5():
-    # Test when there is a short (nucmer won't find it) overlap bewteen the
-    # contigs
+    # Test when there is a short (nucmer won't find) overlap bewteen the contigs
     outprefix = "tmp.consensus_contigs_to_consensus_5"
     utils.rm_rf(f"{outprefix}.*")
     part_of_ref = "CGTCCGGGTGTGACCGAAAGGTAAGATGGAGAGCCTTGTCCCTGGTTTCAACGAGAAAACACACGTCCAACTCAGTTTGCCTGTTTTACAGGTTCGCGACGTGCTCGTACGTGGCTTTGGAGACTCCGTGGAGGAGGTCTTATCAGAGGCACGTCAACATCTTAAAGATGGCACTTGTGGCTTAGTAGAAGTTGAAAAAGGCGTTTTGCCTCAACTTGAACAGCCCTATGTGTTCATCAAACGTTCGGATGCTCGAACTGCACCTCATGGTCATGTTATGGTTGAGCTGGTAGCAGAACT"
@@ -297,6 +293,23 @@ def test_consensus_contigs_to_consensus_5():
     # (the first AC is just extra, is ref 99-100, so don't include twice!
     #  and alo need the extra G at the end of middle bit from contig2 )
     expect = part_of_ref[:100] + "ATGCTCGTACGTGGCTTTGGAGACTCCGTG" + part_of_ref[131:]
+    assert got == expect
+
+
+def test_consensus_contigs_to_consensus_6():
+    # Test when no nucmer overlap between contigs, but the unmapped parts of
+    # their ends are longer than you would expect based on the nucmer coords.
+    # Testing here that the contig ends get trimmed
+    outprefix = "tmp.consensus_contigs_to_consensus_6"
+    utils.rm_rf(f"{outprefix}.*")
+    part_of_ref = "CGTCCGGGTGTGACCGAAAGGTAAGATGGAGAGCCTTGTCCCTGGTTTCAACGAGAAAACACACGTCCAACTCAGTTTGCCTGTTTTACAGGTTCGCGACGTGCTCGTACGTGGCTTTGGAGACTCCGTGGAGGAGGTCTTATCAGAGGCACGTCAACATCTTAAAGATGGCACTTGTGGCTTAGTAGAAGTTGAAAAAGGCGTTTTGCCTCAACTTGAACAGCCCTATGTGTTCATCAAACGTTCGGATGCTCGAACTGCACCTCATGGTCATGTTATGGTTGAGCTGGTAGCAGAACT"
+    contig1 = part_of_ref[:100] + "A" * 10
+    contig2 = "C" * 10 + part_of_ref[105:200]
+    ref_fasta = os.path.join(data_dir, "covid.ref.MN908947.3.fa")
+    got = amplicon_overlapper.consensus_contigs_to_consensus(
+        [contig1, contig2], ref_fasta, outprefix
+    )
+    expect = part_of_ref[:100] + "N" * 5 + part_of_ref[105:200]
     assert got == expect
 
 

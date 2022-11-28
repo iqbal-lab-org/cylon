@@ -1,4 +1,5 @@
 import logging
+from operator import attrgetter, itemgetter
 import os
 import re
 
@@ -9,22 +10,16 @@ from Bio import pairwise2
 from cylon import utils
 
 
-
 def global_align(seq1, seq2):
     """Returns global alignment strings from N-W alignment of the
     two sequences. Dashes for gaps"""
-    match=1
-    mismatch=-1
-    gap_open=-5
-    gap_extend=-3
-
     alignments = pairwise2.align.globalms(
         seq1,
         seq2,
-        1, # match
-        -1, # mismatch
-        -5, #gap_open
-        -3, #gap_extend
+        1,  # match
+        -1,  # mismatch
+        -5,  # gap_open
+        -3,  # gap_extend
     )
     # Alignments is a list of tuples. Each tuple has length 5. Entries:
     # 0: seq1 alignment (ie with dashes for indels)
@@ -35,94 +30,6 @@ def global_align(seq1, seq2):
         return None
     else:
         return alignments[0][0], alignments[0][1]
-
-
-def make_split_contigs_fasta(contigs, outfile):
-    with open(outfile, "w") as f:
-        for d in contigs:
-            length = min(250, int(len(d["seq"]) / 2))
-            print(f">{d['name']}.left", file=f)
-            print(d["seq"][:length], file=f)
-            print(f">{d['name']}.right", file=f)
-            print(d["seq"][-length:], file=f)
-
-
-def map_split_contigs(to_map_fasta, ref_fasta, end_allowance=20, debug=False):
-    tmp_nucmer_out = f"{to_map_fasta}.tmp.nucmer"
-    runner = pymummer.nucmer.Runner(
-        ref_fasta, to_map_fasta, tmp_nucmer_out, mincluster=20
-    )
-    runner.run()
-    mappings = {}
-    for hit in pymummer.coords_file.reader(tmp_nucmer_out):
-        if not hit.on_same_strand():
-            continue
-
-        name, left_or_right = hit.qry_name.split(".")
-        if (left_or_right == "left" and hit.qry_start > end_allowance) or (
-            left_or_right == "right" and hit.qry_end + end_allowance < hit.qry_length
-        ):
-            continue
-
-        key = (name, left_or_right)
-
-        if key not in mappings or mappings[key].hit_length_qry < hit.hit_length_qry:
-            mappings[key] = hit
-
-        logging.debug(f"nucmer mapping contigs to ref {hit}")
-
-    if not debug:
-        os.unlink(tmp_nucmer_out)
-
-    return mappings
-
-
-def remove_contigs_without_both_ends_well_mapped(contigs, mappings):
-    bad_contig_indexes = set()
-    for i, contig in enumerate(contigs):
-        left_key = (contig["name"], "left")
-        right_key = (contig["name"], "right")
-        if left_key not in mappings:
-            logging.warning(
-                f"Error mapping left half of contig to reference genome. Contig excluded from consensus: {contig['seq']}"
-            )
-            bad_contig_indexes.add(i)
-        elif right_key not in mappings:
-            logging.warning(
-                f"Error mapping right half of contig to reference genome. Contig excluded from consensus: {contig['seq']}"
-            )
-            bad_contig_indexes.add(i)
-        elif not mappings[left_key].ref_start < mappings[left_key].ref_end <= mappings[right_key].ref_start < mappings[right_key].ref_end:
-            bad_contig_indexes.add(i)
-
-    return [contigs[i] for i in range(len(contigs)) if i not in bad_contig_indexes]
-
-
-def remove_out_of_order_or_contained_contigs(contigs, mappings):
-    i = 0
-    while i < len(contigs) - 1:
-        this_left = mappings[(contigs[i]["name"], "left")]
-        this_right = mappings[(contigs[i]["name"], "right")]
-        next_left = mappings[(contigs[i+1]["name"], "left")]
-        next_right = mappings[(contigs[i+1]["name"], "right")]
-
-        if this_left.ref_start <= next_left.ref_start <= next_right.ref_end <= this_right.ref_end:
-            contigs.pop(i+1)
-            continue
-        elif next_left.ref_start <= this_left.ref_start <= this_right.ref_end <= next_right.ref_end:
-            contigs.pop(i)
-            continue
-
-        if next_left.ref_start < this_left.ref_start or this_right.ref_end > next_right.ref_end:
-            if this_right.ref_end -  this_left.ref_start > next_right.ref_end - next_right.ref_start:
-                contigs.pop(i+1)
-            else:
-                contigs.pop(i)
-            continue
-
-        i += 1
-
-    return contigs
 
 
 def split_contigs_on_gaps(contigs_in, gap_length=10):
@@ -145,7 +52,7 @@ def make_trimmed_contigs(contigs_in, window=20):
             end -= 1
         if start < end:
             logging.debug(f"contig trim {i}, {len(seq)}, {start}, {end}, {seq}")
-            contigs_out.append({"name": str(i), "seq": seq[start:end]})
+            contigs_out.append(seq[start:end])
             logging.debug(
                 f"contig trimmed {i}, {len(seq)}, {start}, {end}, {seq[start:end]}"
             )
@@ -153,19 +60,93 @@ def make_trimmed_contigs(contigs_in, window=20):
     return contigs_out
 
 
-def self_map_contigs(contigs, outprefix, debug=False):
-    to_map_fasta = f"{outprefix}.fa"
-    with open(to_map_fasta, "w") as f:
-        for c in contigs:
-            print(">" + c["name"], c["seq"], sep="\n", file=f)
-    nucmer_out = f"{outprefix}.nucmer"
+def contigs_list_to_fasta(contigs, outfile):
+    with open(outfile, "w") as f:
+        for i, seq in enumerate(contigs):
+            print(f">{i}", seq, sep="\n", file=f)
+
+
+def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
     runner = pymummer.nucmer.Runner(
-        to_map_fasta, to_map_fasta, nucmer_out, mincluster=5, maxmatch=True,
+        ref_fasta,
+        contigs_fa,
+        outfile,
+        mincluster=5,
+        breaklen=500,
+        maxmatch=True,
     )
     runner.run()
     mappings = {}
-    for hit in pymummer.coords_file.reader(nucmer_out):
-        if not hit.on_same_strand() or int(hit.ref_name) + 1 != int(hit.qry_name):
+    for hit in pymummer.coords_file.reader(outfile):
+        logging.debug("nucmer contigs vs ref: {hit}")
+        if not hit.on_same_strand():
+            continue
+
+        contig_index = int(hit.qry_name)
+        if contig_index not in mappings:
+            mappings[contig_index] = []
+        mappings[contig_index].append(hit)
+
+    mapping_list = []
+    for contig_index, hits in mappings.items():
+        hits.sort(key=attrgetter("qry_start"))
+        mapping_list.append(
+            {
+                "contig_index": contig_index,
+                "start": hits[0].ref_start,
+                "end": hits[-1].ref_end,
+                "hits": hits,
+            }
+        )
+
+    mapping_list.sort(key=itemgetter("contig_index"))
+    return mapping_list
+
+
+def remove_out_of_order_or_contained_mappings(mappings):
+    i = 0
+    while i < len(mappings) - 1:
+        this_start = mappings[i]["start"]
+        this_end = mappings[i]["end"]
+        next_start = mappings[i + 1]["start"]
+        next_end = mappings[i + 1]["end"]
+
+        if this_start <= next_start <= next_end <= this_end:
+            mappings.pop(i + 1)
+            continue
+        elif next_start <= this_start <= this_end <= next_end:
+            mappings.pop(i)
+            continue
+
+        if next_start < this_start or this_end > next_end:
+            if this_end - this_start > next_end - next_start:
+                mappings.pop(i + 1)
+            else:
+                mappings.pop(i)
+            continue
+
+        i += 1
+
+    return mappings
+
+
+def self_map_contigs(contigs_fa, outfile, end_allow=20):
+    runner = pymummer.nucmer.Runner(
+        contigs_fa,
+        contigs_fa,
+        outfile,
+        mincluster=5,
+        maxmatch=True,
+    )
+    runner.run()
+    mappings = {}
+    for hit in pymummer.coords_file.reader(outfile):
+        if (
+            not hit.on_same_strand()
+            or not int(hit.ref_name) < int(hit.qry_name)
+            or hit.ref_end + end_allow < hit.ref_length
+            or hit.qry_start > end_allow
+        ):
             continue
 
         key = (int(hit.ref_name), int(hit.qry_name))
@@ -173,10 +154,6 @@ def self_map_contigs(contigs, outprefix, debug=False):
             mappings[key] = hit
 
         logging.debug(f"nucmer mapping contigs to each other {hit}")
-
-    if not debug:
-        os.unlink(to_map_fasta)
-        os.unlink(nucmer_out)
 
     return mappings
 
@@ -188,101 +165,104 @@ def consensus_contigs_to_consensus(
         logging.warning("No contigs were made. Aborting assembly")
         return None
 
-    fa_to_map = f"{outprefix}.to_map.fa"
     contigs = make_trimmed_contigs(contigs, window=trim_end_window)
-    make_split_contigs_fasta(contigs, fa_to_map)
-    split_mappings = map_split_contigs(fa_to_map, ref_fasta, end_allowance=map_end_allowance)
+    contigs_fa = f"{outprefix}.tmp.trimmed_contigs.fa"
+    nucmer_contigs_v_ref = f"{outprefix}.tmp.trimmed_contigs_v_ref.coords"
+    nucmer_contigs_v_self = f"{outprefix}.tmp.trimmed_contigs_v_self.coords"
+    contigs_list_to_fasta(contigs, contigs_fa)
+    ref_mappings = map_contigs_to_ref(ref_fasta, contigs_fa, nucmer_contigs_v_ref)
+    ref_mappings = remove_out_of_order_or_contained_mappings(ref_mappings)
+    self_mappings = self_map_contigs(contigs_fa, nucmer_contigs_v_self)
     if not debug:
-        os.unlink(fa_to_map)
-    contigs = remove_contigs_without_both_ends_well_mapped(contigs, split_mappings)
-    contigs = remove_out_of_order_or_contained_contigs(contigs, split_mappings)
-    if len(contigs) == 0:
-        logging.warning(
-            "Errors aligning contigs to reference to make final sequence. Aborting assembly"
-        )
-        return None
-
-    self_map_out = f"{outprefix}.self_map_contigs"
-    self_mappings = self_map_contigs(contigs, self_map_out, debug=debug)
+        os.unlink(nucmer_contigs_v_ref)
+        os.unlink(nucmer_contigs_v_self)
+        os.unlink(contigs_fa)
     consensus = []
-    trim_next = 0
+    to_trim = 0
 
-    for i, contig in enumerate(contigs):
-        right_hit = split_mappings[(contig["name"], "right")]
-        if i < len(contigs) - 1:
-            next_left_hit = split_mappings[(contigs[i + 1]["name"], "left")]
+    for map_index, this_map in enumerate(ref_mappings):
+        this_ctg_index = this_map["contig_index"]
+        this_contig = contigs[this_ctg_index]
+        if map_index >= len(ref_mappings) - 1:  # add last piece of final contig
+            consensus.append(this_contig[to_trim:])
+            break
 
-            # If the contigs do not overlap each other based on ref coords
-            if next_left_hit.ref_start > right_hit.ref_end:
-                consensus.append(contig["seq"][trim_next:])
-                consensus.append("N" * (next_left_hit.ref_start - right_hit.ref_end - 1))
-                trim_next = 0
-            else: # split mapping to ref coords say the contigs overlap
-                self_hit = self_mappings.get((i, i+1), None)
+        next_map = ref_mappings[map_index + 1]
+        next_ctg_index = next_map["contig_index"]
+        next_contig = contigs[next_ctg_index]
+        self_map_key = (this_ctg_index, next_ctg_index)
+        dist_between_contigs = next_map["start"] - this_map["end"]
 
-                if self_hit is None:
-                    # No overlapping match found by nucmer, but from reference
-                    # mapping contig ends, they should overlap. If we're here
-                    # then things may be bit dodgy. Likely a tiny overlap
-                    # and/or enough disagreement between the contigs to
-                    # mean we didn't get a match. Get the expected overlapping
-                    # sequence from this and the next contig. If they are the
-                    # same then all good, otherwise align them and use the
-                    # first part from this contig, and the second part from the
-                    # next contig
+        # If nucmer found a self-match between this contig and the next
+        # one then it gets priority. Also sanity check that we don't expect
+        # them to be too far away based on reference mapping
+        if dist_between_contigs <= 50 and self_map_key in self_mappings:
+            self_hit = self_mappings[self_map_key]
+            consensus.append(this_contig[to_trim : self_hit.ref_start])
+            this_ns = this_contig[self_hit.ref_start : self_hit.ref_end + 1].count("N")
+            next_ns = next_contig[self_hit.qry_start : self_hit.qry_end + 1].count("N")
 
-                    # Pull out the sequences that should match
-                    overlap_len = right_hit.ref_end - next_left_hit.ref_start + 1
-                    this_end_in_contig = len(contig["seq"]) - right_hit.qry_length + right_hit.qry_end
-                    this_ol_start_in_contig = 1 + this_end_in_contig - overlap_len
-                    this_ol_seq = contig["seq"][this_ol_start_in_contig:this_end_in_contig + 1]
-                    next_ol_seq = contigs[i+1]["seq"][next_left_hit.qry_start:next_left_hit.qry_start+overlap_len]
+            if this_ns < next_ns:
+                consensus.append(this_contig[self_hit.ref_start : self_hit.ref_end])
+                to_trim = self_hit.qry_end
+            else:
+                to_trim = self_hit.qry_start
+        elif this_map["end"] < next_map["start"]:  # no overlap from ref coords
+            ref_gap_len = next_map["start"] - this_map["end"] - 1
+            this_left_qry_end = this_map["hits"][-1].qry_end
+            left_extra = len(this_contig) - this_left_qry_end
+            right_extra = next_map["hits"][0].qry_start
+            # If the total bases we're adding on from the unmapped contig ends
+            # is <= the gap legnth in the reference, then this is ok and we can
+            # add all of the contig ends
+            if left_extra + right_extra <= ref_gap_len:
+                consensus.append(this_contig[to_trim:])
+                consensus.append("N" * ref_gap_len)
+                to_trim = 0
+            else:  # trying to add too many bases from the contig ends. Trim them
+                consensus.append(this_contig[to_trim : this_left_qry_end + 1])
+                consensus.append("N" * ref_gap_len)
+                to_trim = right_extra
+        else:  # mapping coords to ref say the contigs overlap
+            # Get the sequence from this and next contig that overlap
+            overlap_len = this_map["end"] - next_map["start"] + 1
+            this_ol_end = this_map["hits"][-1].qry_end
+            this_ol_start = this_ol_end - overlap_len + 1
+            this_ol_seq = this_contig[this_ol_start : this_ol_end + 1]
+            next_ol_start = next_map["hits"][0].qry_start
+            next_ol_end = next_ol_start + overlap_len - 1
+            next_ol_seq = next_contig[next_ol_start : next_ol_end + 1]
 
-                    # Nice case: the two sequences are same
-                    if this_ol_seq == next_ol_seq:
-                        consensus.append(contig["seq"][trim_next:right_hit.ref_end + 1])
-                    else: # different overlapping sequences
-                        match = global_align(this_ol_seq, next_ol_seq)
-                        if match is None:
-                            # not a lot can do here. Bail out, trim the contig
-                            # ends and stick some Ns in there
-                            consensus.append(contig["seq"][trim_next:right_hit.this_ol_start_in_contig])
-                            consensus.append("N" * overlap_len)
-                        else:
-                            first_good = None
-                            for i in range(len(match[0])):
-                                if match[0][i] == match[1][i] and match[0] != "-":
-                                    first_good = i
-                                    break
-                            if first_good is None:
-                                # not a lot can do here. Bail out, trim the contig
-                                # ends and stick some Ns in there
-                                consensus.append(contig["seq"][trim_next:right_hit.this_ol_start_in_contig])
-                                consensus.append("N" * overlap_len)
-                            else:
-                                new_seq = (match[0][:i] + match[1][i:]).replace("-", "")
-                                consensus.append(contig["seq"][trim_next:this_ol_start_in_contig] + new_seq)
-                    trim_next = next_left_hit.qry_start + overlap_len
-                else: # overlap bewteen this/next contig found by nucmer
-                    assert self_hit.qry_name == contigs[i+1]["name"]
-                    consensus.append(contig["seq"][trim_next:self_hit.ref_start])
-                    right_ns = contig["seq"][self_hit.ref_start:self_hit.ref_end].count("N")
-                    next_left_ns = contigs[i+1]["seq"][self_hit.qry_start:self_hit.qry_end].count("N")
-                    if right_ns < next_left_ns:
-                        consensus.append(contig["seq"][self_hit.ref_start:self_hit.ref_end])
-                        trim_next = self_hit.qry_end
+            # Nice case: the two sequences are the same
+            if this_ol_seq == next_ol_seq:
+                consensus.append(this_contig[to_trim : this_ol_end + 1])
+            else:  # different overlapping sequences
+                match = global_align(this_ol_seq, next_ol_seq)
+                if match is None:
+                    consensus.append(this_contig[to_trim:this_ol_start])
+                    consensus.append("N" * overlap_len)
+                else:
+                    first_good = None
+                    for i in range(len(match[0])):
+                        if match[0][i] == match[1][i] and match[0] != "-":
+                            first_good = i
+                            break
+                    if first_good is None:
+                        # not a lot can do here. Bail out, trim the contig
+                        # ends and stick some Ns in there
+                        consensus.append(this_contig[to_trim:this_ol_start])
+                        consensus.append("N" * overlap_len)
                     else:
-                        trim_next = self_hit.qry_start
-        else: # add the last piece of the final contig
-            consensus.append(contig["seq"][trim_next:])
+                        new_seq = (match[0][:i] + match[1][i:]).replace("-", "")
+                        consensus.append(this_contig[to_trim:this_ol_start] + new_seq)
+
+            to_trim = next_ol_end + 1
 
     consensus = "".join([x for x in consensus if len(x) > 0])
     if any([x != "N" for x in consensus]):
         return consensus
     else:
-        logging.warning(
-            "Error making consensus, did not get any non-N bases"
-        )
+        logging.warning("Error making consensus, did not get any non-N bases")
         return None
 
 
