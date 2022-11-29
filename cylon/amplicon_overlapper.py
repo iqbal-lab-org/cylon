@@ -85,7 +85,19 @@ def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
         contig_index = int(hit.qry_name)
         if contig_index not in mappings:
             mappings[contig_index] = []
-        mappings[contig_index].append(hit)
+
+        # Check if this hit is contained in or contains an existing hit. In
+        # which case keep the longest hit only
+        add_hit = True
+        for i, other in enumerate(mappings[contig_index]):
+            if hit.qry_start <= other.qry_start < other.qry_end <= hit.qry_end or other.qry_start <= hit.qry_start < hit.qry_end <= other.qry_end:
+                add_hit = False
+                if hit.hit_length_qry > other.hit_length_qry:
+                    mappings[contig_index][i] = hit
+                break
+
+        if add_hit:
+            mappings[contig_index].append(hit)
 
     mapping_list = []
     for contig_index, hits in mappings.items():
