@@ -78,7 +78,7 @@ def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
     runner.run()
     mappings = {}
     for hit in pymummer.coords_file.reader(outfile):
-        logging.debug("nucmer contigs vs ref: {hit}")
+        logging.debug(f"nucmer contigs vs ref: {hit}")
         if not hit.on_same_strand():
             continue
 
