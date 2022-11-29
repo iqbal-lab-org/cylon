@@ -66,6 +66,30 @@ def contigs_list_to_fasta(contigs, outfile):
             print(f">{i}", seq, sep="\n", file=f)
 
 
+def remove_contained_and_bad_order_hits_from_ref_hits(hits):
+    hits.sort(key=attrgetter("qry_start"))
+    i = 0
+    while i < len(hits) - 1:
+        this_start = hits[i].qry_start
+        this_end = hits[i].qry_end
+        next_start = hits[i+1].qry_start
+        next_end = hits[i+1].qry_end
+
+        if this_start <= next_start <= next_end <= this_end:
+            hits.pop(i+1)
+        elif next_start <= this_start <= this_end <= next_end:
+            hits.pop(i)
+        elif hits[i].ref_start > hits[i+1].ref_start:
+            if this_end - this_start > next_end - next_start:
+                hits.pop(i+1)
+            else:
+                hits.pop(i)
+        else:
+            i += 1
+
+    return hits
+
+
 def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
     runner = pymummer.nucmer.Runner(
         ref_fasta,
@@ -90,7 +114,7 @@ def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
 
     mapping_list = []
     for contig_index, hits in mappings.items():
-        hits.sort(key=attrgetter("qry_start"))
+        hits = remove_contained_and_bad_order_hits_from_ref_hits(hits)
         first = sorted(hits, key=attrgetter("qry_start"))[0]
         last = sorted(hits, key=attrgetter("qry_end"))[-1]
         mapping_list.append(
