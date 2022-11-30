@@ -78,7 +78,10 @@ def remove_contained_and_bad_order_hits_from_ref_hits(hits):
         can_add = True
         for other_hit in new_hits:
             # if this new hit overlaps other_hit
-            if other_hit.qry_start <= new_hit.qry_end and new_hit.qry_start <= other_hit.qry_end:
+            if (
+                other_hit.qry_start <= new_hit.qry_end
+                and new_hit.qry_start <= other_hit.qry_end
+            ):
                 can_add = False
                 break
 
@@ -89,22 +92,22 @@ def remove_contained_and_bad_order_hits_from_ref_hits(hits):
 
     # Now have a list of non-overlapping longest hits. Remove hits that have
     # a different reference order or inconsistent gap between contig coords
-    # vs ref coords
+    # vs ref coords
     i = 0
     while i < len(new_hits) - 1:
         need_to_pop = False
 
-        if new_hits[i+1].ref_start <= new_hits[i].ref_end:
+        if new_hits[i + 1].ref_start <= new_hits[i].ref_end:
             need_to_pop = True
         else:
-            qry_gap = new_hits[i+1].qry_start - new_hits[i].qry_end
+            qry_gap = new_hits[i + 1].qry_start - new_hits[i].qry_end
             assert qry_gap > 0
-            ref_gap = new_hits[i+1].ref_start - new_hits[i].ref_end
+            ref_gap = new_hits[i + 1].ref_start - new_hits[i].ref_end
             need_to_pop = abs(qry_gap - ref_gap) > 100
 
         if need_to_pop:
-            if new_hits[i].hit_length_qry > new_hits[i+1].hit_length_qry:
-                new_hits.pop(i+1)
+            if new_hits[i].hit_length_qry > new_hits[i + 1].hit_length_qry:
+                new_hits.pop(i + 1)
             else:
                 new_hits.pop(i)
         else:
@@ -133,7 +136,6 @@ def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
         if contig_index not in mappings:
             mappings[contig_index] = []
         mappings[contig_index].append(hit)
-
 
     mapping_list = []
     for contig_index, hits in mappings.items():

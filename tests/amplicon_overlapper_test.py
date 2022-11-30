@@ -12,6 +12,7 @@ data_dir = os.path.join(this_dir, "data", "amplicon_overlapper")
 # This is effectively what is made by difflib.SequenceMatcher.find_longest_match()
 Match = collections.namedtuple("Match", ("a", "b", "size"))
 
+
 def test_remove_contained_and_bad_order_hits_from_ref_hits():
     f = amplicon_overlapper.remove_contained_and_bad_order_hits_from_ref_hits
     assert f([]) == []
@@ -45,7 +46,6 @@ def test_remove_contained_and_bad_order_hits_from_ref_hits():
     hit3.qry_start = 2010
     hit3.qry_end = 2020
     assert f([hit3, hit1, hit2]) == [hit1, hit3]
-
 
     hit3.ref_start = 10995
     hit3.ref_end = 11005
