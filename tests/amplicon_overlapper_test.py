@@ -1,4 +1,5 @@
 import collections
+from unittest import mock
 import os
 import pytest
 
@@ -10,6 +11,45 @@ data_dir = os.path.join(this_dir, "data", "amplicon_overlapper")
 
 # This is effectively what is made by difflib.SequenceMatcher.find_longest_match()
 Match = collections.namedtuple("Match", ("a", "b", "size"))
+
+def test_remove_contained_and_bad_order_hits_from_ref_hits():
+    f = amplicon_overlapper.remove_contained_and_bad_order_hits_from_ref_hits
+    assert f([]) == []
+    hit1 = mock.Mock()
+    hit1.ref_start = 10000
+    hit1.ref_end = 11000
+    hit1.qry_start = 1000
+    hit1.qry_end = 2000
+    hit1.hit_length_qry = 1000
+    assert f([hit1]) == [hit1]
+
+    hit2 = mock.Mock()
+    hit2.ref_start = 10
+    hit2.ref_end = 20
+    hit2.qry_start = 50
+    hit2.qry_end = 60
+    hit2.hit_length_qry = 10
+
+    assert f([hit1, hit2]) == [hit1]
+    assert f([hit2, hit1]) == [hit1]
+
+    hit3 = mock.Mock()
+    hit3.ref_start = 11010
+    hit3.ref_end = 11020
+    hit3.qry_start = 1998
+    hit3.qry_end = 2008
+    hit3.hit_length_qry = 10
+
+    assert f([hit3, hit1, hit2]) == [hit1]
+
+    hit3.qry_start = 2010
+    hit3.qry_end = 2020
+    assert f([hit3, hit1, hit2]) == [hit1, hit3]
+
+
+    hit3.ref_start = 10995
+    hit3.ref_end = 11005
+    assert f([hit3, hit1, hit2]) == [hit1]
 
 
 def test_amplicons_to_consensus_contigs():

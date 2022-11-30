@@ -67,27 +67,50 @@ def contigs_list_to_fasta(contigs, outfile):
 
 
 def remove_contained_and_bad_order_hits_from_ref_hits(hits):
-    hits.sort(key=attrgetter("qry_start"))
-    i = 0
-    while i < len(hits) - 1:
-        this_start = hits[i].qry_start
-        this_end = hits[i].qry_end
-        next_start = hits[i+1].qry_start
-        next_end = hits[i+1].qry_end
+    if len(hits) <= 1:
+        return hits
 
-        if this_start <= next_start <= next_end <= this_end:
-            hits.pop(i+1)
-        elif next_start <= this_start <= this_end <= next_end:
-            hits.pop(i)
-        elif hits[i].ref_start > hits[i+1].ref_start:
-            if this_end - this_start > next_end - next_start:
-                hits.pop(i+1)
+    # Sort hits in order of longest to shortest. Keep each new hit if
+    # it doesn't overlap an existing hit
+    hits.sort(reverse=True, key=attrgetter("hit_length_qry"))
+    new_hits = [hits[0]]
+    for new_hit in hits[1:]:
+        can_add = True
+        for other_hit in new_hits:
+            # if this new hit overlaps other_hit
+            if other_hit.qry_start <= new_hit.qry_end and new_hit.qry_start <= other_hit.qry_end:
+                can_add = False
+                break
+
+        if can_add:
+            new_hits.append(new_hit)
+
+    new_hits.sort(key=attrgetter("qry_start"))
+
+    # Now have a list of non-overlapping longest hits. Remove hits that have
+    # a different reference order or inconsistent gap between contig coords
+    # vs ref coords
+    i = 0
+    while i < len(new_hits) - 1:
+        need_to_pop = False
+
+        if new_hits[i+1].ref_start <= new_hits[i].ref_end:
+            need_to_pop = True
+        else:
+            qry_gap = new_hits[i+1].qry_start - new_hits[i].qry_end
+            assert qry_gap > 0
+            ref_gap = new_hits[i+1].ref_start - new_hits[i].ref_end
+            need_to_pop = abs(qry_gap - ref_gap) > 100
+
+        if need_to_pop:
+            if new_hits[i].hit_length_qry > new_hits[i+1].hit_length_qry:
+                new_hits.pop(i+1)
             else:
-                hits.pop(i)
+                new_hits.pop(i)
         else:
             i += 1
 
-    return hits
+    return new_hits
 
 
 def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
@@ -103,7 +126,7 @@ def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
     mappings = {}
     for hit in pymummer.coords_file.reader(outfile):
         logging.debug(f"nucmer contigs vs ref: {hit}")
-        if not hit.on_same_strand():
+        if not hit.ref_start >= hit.ref_end and hit.qry_start >= hit.qry_end:
             continue
 
         contig_index = int(hit.qry_name)
@@ -125,6 +148,8 @@ def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
                 "hits": [first, last],
             }
         )
+        logging.debug(f"First nucmer match for contig {contig_index}: {first}")
+        logging.debug(f"Last nucmer match for contig {contig_index}: {last}")
 
     mapping_list.sort(key=itemgetter("contig_index"))
     return mapping_list
@@ -169,7 +194,8 @@ def self_map_contigs(contigs_fa, outfile, end_allow=20):
     mappings = {}
     for hit in pymummer.coords_file.reader(outfile):
         if (
-            not hit.on_same_strand()
+            hit.ref_start >= hit.ref_end
+            or hit.qry_start >= hit.qry_end
             or not int(hit.ref_name) < int(hit.qry_name)
             or hit.ref_end + end_allow < hit.ref_length
             or hit.qry_start > end_allow
