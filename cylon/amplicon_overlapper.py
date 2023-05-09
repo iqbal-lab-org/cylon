@@ -251,7 +251,7 @@ def consensus_contigs_to_consensus(
         # If nucmer found a self-match between this contig and the next
         # one then it gets priority. Also sanity check that we don't expect
         # them to be too far away based on reference mapping
-        if dist_between_contigs <= 50 and self_map_key in self_mappings:
+        if dist_between_contigs <= 250 and self_map_key in self_mappings:
             self_hit = self_mappings[self_map_key]
             consensus.append(this_contig[to_trim : self_hit.ref_start])
             this_ns = this_contig[self_hit.ref_start : self_hit.ref_end + 1].count("N")
