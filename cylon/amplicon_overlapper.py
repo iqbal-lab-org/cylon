@@ -10,6 +10,26 @@ from Bio import pairwise2
 from cylon import utils
 
 
+def run_nucmer(ref, qry, out, breaklen=None):
+    # A temp dir gets made in cwd. We want to control where this is by
+    # chdir to same place as output file, then chdir back again
+    original_dir = os.getcwd()
+    ref = os.path.abspath(ref)
+    qry = os.path.abspath(qry)
+    out = os.path.abspath(out)
+    outdir = os.path.dirname(os.path.abspath(out))
+    os.chdir(outdir)
+    runner = pymummer.nucmer.Runner(
+        ref,
+        qry,
+        out,
+        mincluster=5,
+        breaklen=breaklen,
+        maxmatch=True,
+    )
+    runner.run()
+    os.chdir(original_dir)
+
 def global_align(seq1, seq2):
     """Returns global alignment strings from N-W alignment of the
     two sequences. Dashes for gaps"""
@@ -117,15 +137,7 @@ def remove_contained_and_bad_order_hits_from_ref_hits(hits):
 
 
 def map_contigs_to_ref(ref_fasta, contigs_fa, outfile):
-    runner = pymummer.nucmer.Runner(
-        ref_fasta,
-        contigs_fa,
-        outfile,
-        mincluster=5,
-        breaklen=500,
-        maxmatch=True,
-    )
-    runner.run()
+    run_nucmer(ref_fasta, contigs_fa, outfile, breaklen=500)
     mappings = {}
     for hit in pymummer.coords_file.reader(outfile):
         logging.debug(f"nucmer contigs vs ref: {hit}")
@@ -185,14 +197,7 @@ def remove_out_of_order_or_contained_mappings(mappings):
 
 
 def self_map_contigs(contigs_fa, outfile, end_allow=20):
-    runner = pymummer.nucmer.Runner(
-        contigs_fa,
-        contigs_fa,
-        outfile,
-        mincluster=5,
-        maxmatch=True,
-    )
-    runner.run()
+    run_nucmer(contigs_fa, contigs_fa, outfile)
     mappings = {}
     for hit in pymummer.coords_file.reader(outfile):
         if (
