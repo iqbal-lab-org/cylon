@@ -5,10 +5,10 @@ Virus assembly module used by viridian
 
 # Important
 We recommend that you use
-[Viridian workflow](https://github.com/iqbal-lab-org/viridian_workflow) instead of
+[Viridian](https://github.com/iqbal-lab-org/viridian) instead of
 this repository. This repository is intended to be run by
-Viridian workflow, not to be used as a stand-alone tool.
-Viridian workflow provides a complete end-to-end pipeline for
+Viridian, not to be used as a stand-alone tool.
+Viridian provides a complete end-to-end pipeline for
 generating a consensus sequence from reads.
 
 ## Install
