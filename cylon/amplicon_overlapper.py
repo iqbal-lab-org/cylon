@@ -9,7 +9,6 @@ from Bio import pairwise2
 
 from cylon import utils
 
-
 def run_nucmer(ref, qry, out, breaklen=None):
     # A temp dir gets made in cwd. We want to control where this is by
     # chdir to same place as output file, then chdir back again
@@ -342,7 +341,10 @@ def _get_amplicon_ref_matches(amplicons, ref_fasta, outfile, debug=False):
             os.unlink(amp_fa)
         return {}
 
+    # sometimes sr reports the match, sometimes asm20 does. Between them
+    # they are ok. And we take the longest match, so duplicates don't matter
     utils.syscall(f"minimap2 -x sr -t 1 {ref_fasta} {amp_fa} > {outfile}")
+    utils.syscall(f"minimap2 -x asm20 -t 1 {ref_fasta} {amp_fa} >> {outfile}")
     if not debug:
         os.unlink(amp_fa)
     matches = {}
